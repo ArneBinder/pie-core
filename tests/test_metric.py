@@ -1,11 +1,9 @@
-import dataclasses
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import pytest
 
 from pie_core import (
-    Annotation,
     AnnotationLayer,
     Document,
     DocumentMetric,

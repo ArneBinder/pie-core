@@ -1,10 +1,7 @@
 import dataclasses
 from typing import Any, Dict, Optional
 
-from pie_core import Annotation
-from pie_core.document import (
-    Document,
-)
+from pie_core import Annotation, Document
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
