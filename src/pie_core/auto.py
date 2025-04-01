@@ -71,7 +71,7 @@ class AutoModel(PieModelHFHubMixin):
 
 class AutoTaskModule(PieTaskModuleHFHubMixin):
     @classmethod
-    def _from_pretrained(  # type: ignore
+    def _from_pretrained(
         cls,
         *,
         model_id: str,
