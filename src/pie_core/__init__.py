@@ -1,3 +1,4 @@
+from .auto import AutoModel, AutoTaskModule
 from .document import Annotation, AnnotationLayer, Document, annotation_field
 from .metric import DocumentMetric
 from .model import PyTorchIEModel
@@ -11,7 +12,3 @@ from .module_mixins import (
 )
 from .statistic import DocumentStatistic
 from .taskmodule import TaskEncoding, TaskModule
-
-# backwards compatibility
-# AnnotationList = AnnotationLayer
-# RequiresDocumentTypeMixin = WithDocumentTypeMixin
