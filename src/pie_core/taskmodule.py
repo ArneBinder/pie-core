@@ -48,12 +48,12 @@ Metadata = Dict[str, Any]
 class TaskEncoding(Generic[DocumentType, InputEncoding, TargetEncoding]):
     def __init__(
         self,
-        document: DocumentType,
         inputs: InputEncoding,
         targets: Optional[TargetEncoding] = None,
+        document: Optional[DocumentType] = None,
         metadata: Optional[Metadata] = None,
     ) -> None:
-        self.document = document
+        self._document = document
         self.inputs = inputs
         self._targets = targets
         self.metadata = metadata or {}
@@ -64,13 +64,23 @@ class TaskEncoding(Generic[DocumentType, InputEncoding, TargetEncoding]):
 
     @property
     def targets(self) -> TargetEncoding:
-        # TODO: find a better solution
-        assert self._targets is not None, "task encoding has no targets"
+        if self._targets is None:
+            raise ValueError("task encoding has no targets.")
         return self._targets
 
     @targets.setter
     def targets(self, value) -> None:
         self._targets = value
+
+    @property
+    def has_document(self) -> bool:
+        return self._document is not None
+
+    @property
+    def document(self) -> DocumentType:
+        if self._document is None:
+            raise ValueError("task encoding has no document.")
+        return self._document
 
 
 TaskEncodingType = TypeVar("TaskEncodingType", bound=TaskEncoding)
