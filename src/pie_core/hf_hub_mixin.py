@@ -1,11 +1,11 @@
+import abc
 import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
-import requests  # type: ignore
-import torch
+import requests
 from huggingface_hub.constants import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
 from huggingface_hub.hf_api import HfApi
@@ -416,17 +416,15 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
     ```
     """
 
+    @abc.abstractmethod
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a Pytorch model to a local directory."""
-        model_to_save: torch.nn.Module = self.module if hasattr(self, "module") else self  # type: ignore
-        torch.save(model_to_save.state_dict(), model_file)
+        ...
 
+    @abc.abstractmethod
     def load_model_file(
         self, model_file: str, map_location: str = "cpu", strict: bool = False
-    ) -> None:
-        state_dict = torch.load(model_file, map_location=torch.device(map_location))
-        self.load_state_dict(state_dict, strict=strict)  # type: ignore
-        self.eval()  # type: ignore
+    ) -> None: ...
 
     def _save_pretrained(self, save_directory: Path) -> None:
         """Save weights from a Pytorch model to a local directory."""

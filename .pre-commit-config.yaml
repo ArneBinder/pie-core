@@ -89,3 +89,4 @@ repos:
         files: src
         additional_dependencies:
           - types-pkg-resources==0.1.3
+          - types-requests~=2.32.0.20241016
