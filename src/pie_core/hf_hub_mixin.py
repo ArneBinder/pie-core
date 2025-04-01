@@ -416,15 +416,15 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
     ```
     """
 
-    @abc.abstractmethod
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a Pytorch model to a local directory."""
-        ...
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def load_model_file(
         self, model_file: str, map_location: str = "cpu", strict: bool = False
-    ) -> None: ...
+    ) -> None:
+        """Load weights from a Pytorch model file."""
+        raise NotImplementedError
 
     def _save_pretrained(self, save_directory: Path) -> None:
         """Save weights from a Pytorch model to a local directory."""
