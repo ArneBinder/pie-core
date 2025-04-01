@@ -375,9 +375,7 @@ def test_annotation_copy():
     document.attributes.append(attribute_copy2)
     assert len(document.attributes) == 2
     assert str(document.attributes[0]) == "Attribute(annotation=Hello, label=label)"
-    assert (
-        str(document.attributes[1]) == "Attribute(annotation=world, label=label)"
-    )
+    assert str(document.attributes[1]) == "Attribute(annotation=world, label=label)"
 
 
 def test_document_annotation_fields():
