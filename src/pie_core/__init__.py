@@ -11,4 +11,10 @@ from .module_mixins import (
     WithDocumentTypeMixin,
 )
 from .statistic import DocumentStatistic
-from .taskmodule import TaskEncoding, TaskModule
+from .taskmodule import (
+    IterableTaskEncodingDataset,
+    TaskEncoding,
+    TaskEncodingDataset,
+    TaskEncodingSequence,
+    TaskModule,
+)
