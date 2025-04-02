@@ -1,6 +1,6 @@
 # pie-core
 
-<a href="https://pytorch.org/get-started/locally/"><img alt="Huggingface Hub" src="https://img.shields.io/badge/-Huggingface--Hub-darkslateblue?style=flat&logo=huggingface&labelColor=darkslateblue"></a>
+<a href="https://huggingface.co/docs/hub/index"><img alt="Huggingface Hub" src="https://img.shields.io/badge/-Huggingface--Hub-darkslateblue?style=flat&logo=huggingface&labelColor=darkslateblue"></a>
 <a href="https://pytorchlightning.ai/"><img alt="Lightning" src="https://img.shields.io/badge/-Lightning-792ee5?logo=lightning&logoColor=white"></a>
 <a href="https://github.com/ArneBinder/pytorch-ie"><img alt="PyTorch-IE" src="https://img.shields.io/badge/-PyTorch--IE-017F2F?style=flat&logo=github&labelColor=gray"></a><br>
 
