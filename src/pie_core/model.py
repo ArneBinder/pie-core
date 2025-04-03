@@ -3,6 +3,7 @@ from typing import Any, Dict
 import torch
 from pytorch_lightning import LightningModule
 
+from pie_core.auto_mixin import AutoMixin
 from pie_core.hf_hub_mixin import PieModelHFHubMixin
 from pie_core.registrable import Registrable
 
@@ -35,3 +36,9 @@ class PyTorchIEModel(PieModelHFHubMixin, LightningModule, Registrable):
         outputs = self(inputs, **kwargs)
         decoded_outputs = self.decode(inputs=inputs, outputs=outputs)
         return decoded_outputs
+
+
+class AutoModel(AutoMixin[PyTorchIEModel]):
+    """Auto model class."""
+
+    base_class = PyTorchIEModel
