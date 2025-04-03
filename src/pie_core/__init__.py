@@ -1,6 +1,5 @@
 from .document import Annotation, AnnotationLayer, Document, annotation_field
 from .metric import DocumentMetric
-from .model import AutoModel, PyTorchIEModel
 from .module_mixins import (
     EnterDatasetDictMixin,
     EnterDatasetMixin,
