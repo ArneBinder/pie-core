@@ -20,6 +20,7 @@ from pytorch_lightning.core.mixins import HyperparametersMixin
 from torchmetrics import Metric
 from tqdm import tqdm
 
+from pie_core.auto_mixin import AutoMixin
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TOverride
 from pie_core.module_mixins import PreparableMixin, WithDocumentTypeMixin
@@ -464,3 +465,9 @@ class TaskModule(
             f"Override configure_model_metric(stage) to configure a metric for stage '{stage}'."
         )
         return None
+
+
+class AutoTaskModule(AutoMixin[TaskModule]):
+    """Auto task module class."""
+
+    base_class = TaskModule

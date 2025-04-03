@@ -1,7 +1,7 @@
-from .auto import AutoModel, AutoTaskModule
+from .auto_mixin import AutoMixin
 from .document import Annotation, AnnotationLayer, Document, annotation_field
 from .metric import DocumentMetric
-from .model import PyTorchIEModel
+from .model import AutoModel, PyTorchIEModel
 from .module_mixins import (
     EnterDatasetDictMixin,
     EnterDatasetMixin,
@@ -12,6 +12,7 @@ from .module_mixins import (
 )
 from .statistic import DocumentStatistic
 from .taskmodule import (
+    AutoTaskModule,
     IterableTaskEncodingDataset,
     TaskEncoding,
     TaskEncodingDataset,
