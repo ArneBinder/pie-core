@@ -3,7 +3,6 @@ from typing import Any, Dict
 import torch
 from pytorch_lightning import LightningModule
 
-from pie_core.auto_mixin import AutoMixin
 from pie_core.hf_hub_mixin import PieModelHFHubMixin
 from pie_core.registrable import Registrable
 
@@ -38,7 +37,14 @@ class PyTorchIEModel(PieModelHFHubMixin, LightningModule, Registrable):
         return decoded_outputs
 
 
-class AutoModel(AutoMixin[PyTorchIEModel]):
-    """Auto model class."""
+class AutoModel(PieModelHFHubMixin):
 
-    base_class = PyTorchIEModel
+    @classmethod
+    def from_config(cls, config: dict, **kwargs) -> PyTorchIEModel:
+        """Build a model from a config dict."""
+        config = config.copy()
+        class_name = config.pop(cls.config_type_key)
+        # the class name may be overridden by the kwargs
+        class_name = kwargs.pop(cls.config_type_key, class_name)
+        clazz = PyTorchIEModel.by_name(class_name)
+        return clazz._from_config(config, **kwargs)
