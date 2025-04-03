@@ -1,4 +1,3 @@
-from .auto_mixin import AutoMixin
 from .document import Annotation, AnnotationLayer, Document, annotation_field
 from .metric import DocumentMetric
 from .model import AutoModel, PyTorchIEModel
