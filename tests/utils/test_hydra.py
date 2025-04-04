@@ -7,9 +7,15 @@ from pie_core.utils.hydra import (
     InstantiationException,
     resolve_optional_document_type,
     resolve_target,
+    resolve_type,
     serialize_document_type,
 )
-from tests.common import TestDocument, TextBasedDocument
+from tests.common import (
+    TestDocument,
+    TestDocumentWithEntities,
+    TestDocumentWithSentences,
+    TextBasedDocument,
+)
 
 
 def test_resolve_target_string():
@@ -108,3 +114,26 @@ def test_serialize_document_type():
     assert serialized_dt == "tests.common.TestDocument"
     resolved_dt = resolve_optional_document_type(serialized_dt)
     assert resolved_dt == TestDocument
+
+
+def test_resolve_document_type():
+    assert resolve_type(TestDocumentWithEntities) == TestDocumentWithEntities
+    assert resolve_type("tests.common.TestDocumentWithEntities") == TestDocumentWithEntities
+    with pytest.raises(TypeError) as exc_info:
+        resolve_type("tests.utils.test_hydra.test_resolve_document_type")
+    assert str(exc_info.value).startswith(
+        "type must be a subclass of None or a string that resolves to that, but got "
+        "<function test_resolve_document_type"
+    )
+
+    assert (
+        resolve_type(TestDocumentWithEntities, expected_super_type=TextBasedDocument)
+        == TestDocumentWithEntities
+    )
+    with pytest.raises(TypeError) as exc_info:
+        resolve_type(TestDocumentWithEntities, expected_super_type=TestDocumentWithSentences)
+    assert (
+        str(exc_info.value)
+        == f"type must be a subclass of {TestDocumentWithSentences} or a string "
+        f"that resolves to that, but got {TestDocumentWithEntities}"
+    )

@@ -1,5 +1,4 @@
-# taken from hydra/_internal/instantiate/_instantiate2.py
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 from pie_core.document import Document
 
@@ -13,6 +12,7 @@ class CompactHydraException(HydraException): ...
 class InstantiationException(CompactHydraException): ...
 
 
+# taken from hydra/_internal/instantiate/_instantiate2.py
 def _locate(path: str) -> Any:
     """Locate an object by name or dotted path, importing as necessary.
 
@@ -105,3 +105,26 @@ def resolve_optional_document_type(
 
 def serialize_document_type(document_type: Type[Document]) -> str:
     return f"{document_type.__module__}.{document_type.__name__}"
+
+
+T = TypeVar("T")
+TSuper = TypeVar("TSuper")
+
+
+def resolve_type(
+    type_or_str: Union[str, Type[T]],
+    expected_super_type: Optional[Type[TSuper]] = None,
+) -> Type[T]:
+    if isinstance(type_or_str, str):
+        dt = resolve_target(type_or_str)  # type: ignore
+    else:
+        dt = type_or_str
+    if not (
+        isinstance(dt, type)
+        and (expected_super_type is None or issubclass(dt, expected_super_type))
+    ):
+        raise TypeError(
+            f"type must be a subclass of {expected_super_type} or a string that resolves to that, "
+            f"but got {dt}"
+        )
+    return dt
