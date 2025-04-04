@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Any, Dict, Optional
 
-from pie_core import Annotation, Document
+from pie_core import Annotation, AnnotationLayer, Document, annotation_field
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
@@ -74,3 +74,10 @@ class TokenBasedDocument(Document):
 
         # Call the default document construction code
         super().__post_init__()
+
+
+@dataclasses.dataclass
+class TestDocument(TextBasedDocument):
+    sentences: AnnotationLayer[Span] = annotation_field(target="text")
+    entities: AnnotationLayer[LabeledSpan] = annotation_field(target="text")
+    relations: AnnotationLayer[BinaryRelation] = annotation_field(target="entities")
