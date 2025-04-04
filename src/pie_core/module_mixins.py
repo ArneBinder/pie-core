@@ -7,6 +7,7 @@ from pie_core.document import Document
 logger = logging.getLogger(__name__)
 
 
+# TODO: move to pie_datasets? Hmm that will not work either...
 class WithDocumentTypeMixin:
 
     DOCUMENT_TYPE: Optional[Type[Document]] = None
