@@ -81,3 +81,13 @@ class TestDocument(TextBasedDocument):
     sentences: AnnotationLayer[Span] = annotation_field(target="text")
     entities: AnnotationLayer[LabeledSpan] = annotation_field(target="text")
     relations: AnnotationLayer[BinaryRelation] = annotation_field(target="entities")
+
+
+@dataclasses.dataclass
+class TestDocumentWithEntities(TextBasedDocument):
+    entities: AnnotationLayer[LabeledSpan] = annotation_field(target="text")
+
+
+@dataclasses.dataclass
+class TestDocumentWithSentences(TextBasedDocument):
+    sentences: AnnotationLayer[Span] = annotation_field(target="text")

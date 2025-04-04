@@ -7,9 +7,15 @@ from pie_core.utils.hydra import (
     InstantiationException,
     resolve_optional_document_type,
     resolve_target,
-    serialize_document_type,
+    resolve_type,
+    serialize_type,
 )
-from tests.common import TestDocument, TextBasedDocument
+from tests.common import (
+    TestDocument,
+    TestDocumentWithEntities,
+    TestDocumentWithSentences,
+    TextBasedDocument,
+)
 
 
 def test_resolve_target_string():
@@ -91,20 +97,45 @@ def test_resolve_optional_document_type_no_document():
         resolve_optional_document_type(NoDocument)
     assert (
         str(excinfo.value)
-        == "(resolved) document_type must be a subclass of Document, but it is: <class 'test_hydra.NoDocument'>"
+        == "type must be a subclass of <class 'pie_core.document.Document'> or a string "
+        "that resolves to that, but got <class 'test_hydra.NoDocument'>"
     )
 
     with pytest.raises(TypeError) as excinfo:
         resolve_optional_document_type("tests.utils.test_hydra.NoDocument")
     assert (
         str(excinfo.value)
-        == "(resolved) document_type must be a subclass of Document, but it is: <class 'tests.utils.test_hydra.NoDocument'>"
+        == "type must be a subclass of <class 'pie_core.document.Document'> or a string "
+        "that resolves to that, but got <class 'tests.utils.test_hydra.NoDocument'>"
     )
 
 
-def test_serialize_document_type():
+def test_serialize_type():
 
-    serialized_dt = serialize_document_type(TestDocument)
+    serialized_dt = serialize_type(TestDocument)
     assert serialized_dt == "tests.common.TestDocument"
     resolved_dt = resolve_optional_document_type(serialized_dt)
     assert resolved_dt == TestDocument
+
+
+def test_resolve_document_type():
+    assert resolve_type(TestDocumentWithEntities) == TestDocumentWithEntities
+    assert resolve_type("tests.common.TestDocumentWithEntities") == TestDocumentWithEntities
+    with pytest.raises(TypeError) as exc_info:
+        resolve_type("tests.utils.test_hydra.test_resolve_document_type")
+    assert str(exc_info.value).startswith(
+        "type must be a subclass of None or a string that resolves to that, but got "
+        "<function test_resolve_document_type"
+    )
+
+    assert (
+        resolve_type(TestDocumentWithEntities, expected_super_type=TextBasedDocument)
+        == TestDocumentWithEntities
+    )
+    with pytest.raises(TypeError) as exc_info:
+        resolve_type(TestDocumentWithEntities, expected_super_type=TestDocumentWithSentences)
+    assert (
+        str(exc_info.value)
+        == f"type must be a subclass of {TestDocumentWithSentences} or a string "
+        f"that resolves to that, but got {TestDocumentWithEntities}"
+    )
