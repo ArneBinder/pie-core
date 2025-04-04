@@ -67,6 +67,7 @@ def _locate(path: str) -> Any:
     return obj
 
 
+# taken from hydra/_internal/instantiate/_instantiate2.py
 def resolve_target(
     target: Union[str, type, Callable[..., Any]], full_key: str = ""
 ) -> Union[type, Callable[..., Any]]:
@@ -87,25 +88,12 @@ def resolve_target(
     return target
 
 
-def resolve_optional_document_type(
-    document_type: Optional[Union[str, Type[Document]]],
-) -> Optional[Type[Document]]:
-    if document_type is None:
-        return None
-    if isinstance(document_type, str):
-        dt = resolve_target(document_type)
-    else:
-        dt = document_type
-    if not (isinstance(dt, type) and issubclass(dt, Document)):
-        raise TypeError(
-            f"(resolved) document_type must be a subclass of Document, but it is: {dt}"
-        )
-    return dt
-
-
-def serialize_document_type(document_type: Type[Document]) -> str:
+def serialize_type(document_type: Type) -> str:
     return f"{document_type.__module__}.{document_type.__name__}"
 
+
+# for backwards compatibility
+serialize_document_type = serialize_type
 
 T = TypeVar("T")
 TSuper = TypeVar("TSuper")
@@ -128,3 +116,11 @@ def resolve_type(
             f"but got {dt}"
         )
     return dt
+
+
+def resolve_optional_document_type(
+    document_type: Optional[Union[str, Type[Document]]],
+) -> Optional[Type[Document]]:
+    if document_type is None:
+        return None
+    return resolve_type(document_type, Document)

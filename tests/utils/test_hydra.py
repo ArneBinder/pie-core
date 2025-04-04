@@ -8,7 +8,7 @@ from pie_core.utils.hydra import (
     resolve_optional_document_type,
     resolve_target,
     resolve_type,
-    serialize_document_type,
+    serialize_type,
 )
 from tests.common import (
     TestDocument,
@@ -97,20 +97,22 @@ def test_resolve_optional_document_type_no_document():
         resolve_optional_document_type(NoDocument)
     assert (
         str(excinfo.value)
-        == "(resolved) document_type must be a subclass of Document, but it is: <class 'test_hydra.NoDocument'>"
+        == "type must be a subclass of <class 'pie_core.document.Document'> or a string "
+        "that resolves to that, but got <class 'test_hydra.NoDocument'>"
     )
 
     with pytest.raises(TypeError) as excinfo:
         resolve_optional_document_type("tests.utils.test_hydra.NoDocument")
     assert (
         str(excinfo.value)
-        == "(resolved) document_type must be a subclass of Document, but it is: <class 'tests.utils.test_hydra.NoDocument'>"
+        == "type must be a subclass of <class 'pie_core.document.Document'> or a string "
+        "that resolves to that, but got <class 'tests.utils.test_hydra.NoDocument'>"
     )
 
 
-def test_serialize_document_type():
+def test_serialize_type():
 
-    serialized_dt = serialize_document_type(TestDocument)
+    serialized_dt = serialize_type(TestDocument)
     assert serialized_dt == "tests.common.TestDocument"
     resolved_dt = resolve_optional_document_type(serialized_dt)
     assert resolved_dt == TestDocument
