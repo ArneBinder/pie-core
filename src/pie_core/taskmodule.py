@@ -43,10 +43,6 @@ TaskOutput = TypeVar("TaskOutput")
 logger = logging.getLogger(__name__)
 
 
-class InplaceNotSupportedException(Exception):
-    pass
-
-
 class TaskModule(
     ABC,
     PieTaskModuleHFHubMixin,
