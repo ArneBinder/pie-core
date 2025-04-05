@@ -1,10 +1,11 @@
 import logging
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from pie_core.document import Document
 from pie_core.metric import DocumentMetric
+from pie_core.utils.dictionary import flatten_dict, unflatten_dict
 from pie_core.utils.hydra import (
     InstantiationException,
     resolve_optional_document_type,
@@ -12,40 +13,6 @@ from pie_core.utils.hydra import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _flatten_dict_gen(d, parent_key: Tuple[str, ...] = ()) -> Generator:
-    for k, v in d.items():
-        new_key = parent_key + (k,)
-        if isinstance(v, dict):
-            yield from dict(_flatten_dict_gen(v, new_key)).items()
-        else:
-            yield new_key, v
-
-
-def flatten_dict(d: Dict[str, Any]) -> Dict[Tuple[str, ...], Any]:
-    return dict(_flatten_dict_gen(d))
-
-
-def unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
-    """Unflattens a dictionary with nested keys.
-
-    Example:
-        >>> d = {("a", "b", "c"): 1, ("a", "b", "d"): 2, ("a", "e"): 3}
-        >>> unflatten_dict(d)
-        {'a': {'b': {'c': 1, 'd': 2}, 'e': 3}}
-    """
-    result: Dict[str, Any] = {}
-    for k, v in d.items():
-        if len(k) == 0:
-            if len(result) > 1:
-                raise ValueError("Cannot unflatten dictionary with multiple root keys.")
-            return v
-        current = result
-        for key in k[:-1]:
-            current = current.setdefault(key, {})
-        current[k[-1]] = v
-    return result
 
 
 def _min(values: List[float]) -> Optional[float]:
