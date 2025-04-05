@@ -63,20 +63,21 @@ def _flatten_dict_gen(
             yield new_key, v
 
 
-def flatten_dict(
-    d: MutableMapping, parent_key: Tuple[str, ...] = ()
-) -> Dict[Tuple[str, ...], Any]:
-    """Flatten a nested dictionary with tuple keys.
+def flatten_dict(d: Any, parent_key: Tuple[str, ...] = ()) -> Dict[Tuple[str, ...], Any]:
+    """Flatten a nested dictionary with tuple keys. If the input is not a dictionary, it returns a
+    dictionary with an empty tuple as the key and the input value as the value.
 
     Example:
         >>> d = {"a": {"b": 1, "c": 2}, "d": 3}
         >>> flatten_dict(d) == {("a", "b"): 1, ("a", "c"): 2, ("d",): 3}
     """
+    if not isinstance(d, MutableMapping):
+        return {parent_key: d}
     return dict(_flatten_dict_gen(d, parent_key=parent_key))
 
 
 def flatten_dict_s(
-    d: MutableMapping, parent_key: str = "", sep: str = "/"
+    d: Any, parent_key: str = "", sep: str = "/"
 ) -> Dict[Union[str, Tuple[str, ...]], Any]:
     """Flatten a nested dictionary with string keys.
 
@@ -89,11 +90,17 @@ def flatten_dict_s(
         parent_key_tuple = tuple(parent_key)
     else:
         parent_key_tuple = tuple(parent_key.split(sep))
-    return {sep.join(k): v for k, v in _flatten_dict_gen(d, parent_key=parent_key_tuple)}
+    return {sep.join(k): v for k, v in flatten_dict(d, parent_key=parent_key_tuple).items()}
 
 
 def unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
-    """Unflattens a dictionary with nested tuple keys.
+    """Unflattens a dictionary with nested tuple keys. A dictionary with an empty tuple as the key
+    is considered a root key, in which case the value is returned directly.
+
+    Additionally, this version raises an error if there is a conflict such that one key tries
+    to treat another key's value as a dictionary. For example:
+        {("a",): 1, ("a", "b"): 2}
+    should raise a ValueError.
 
     Example:
         >>> d = {("a", "b", "c"): 1, ("a", "b", "d"): 2, ("a", "e"): 3}
@@ -101,15 +108,36 @@ def unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
         {'a': {'b': {'c': 1, 'd': 2}, 'e': 3}}
     """
     result: Dict[str, Any] = {}
-    for k, v in d.items():
-        if len(k) == 0:
-            if len(result) > 1:
-                raise ValueError("Cannot unflatten dictionary with multiple root keys.")
-            return v
+
+    for path, value in d.items():
+        # If the key path is empty, this is a direct value return:
+        if not path:
+            # If there's already something in result or if this isn't the only item, it's invalid
+            if result or len(d) > 1:
+                raise ValueError(
+                    "Conflict at root level: trying to descend into a non-dict value."
+                )
+            return value
+
+        # Walk through the path to create/find intermediate dictionaries
         current = result
-        for key in k[:-1]:
+        for key in path[:-1]:
+            # If we've already stored a non-dict object at this key, it's a conflict
+            if key in current and not isinstance(current[key], dict):
+                raise ValueError(
+                    f"Conflict at path {path}: trying to descend into a non-dict value {current[key]}."
+                )
+            # Use `setdefault` to ensure we have a dict here
             current = current.setdefault(key, {})
-        current[k[-1]] = v
+
+        # If we are about to assign to a key that already holds a dict, that's a conflict
+        if path[-1] in current and isinstance(current[path[-1]], dict):
+            raise ValueError(
+                f"Conflict at path {path}: trying to overwrite existing dict with a non-dict value."
+            )
+
+        current[path[-1]] = value
+
     return result
 
 
@@ -123,6 +151,6 @@ def unflatten_dict_s(d: Dict[str, Any], sep: str = "/") -> Dict[str, Any]:
     """
 
     def _prepare_key(k: str) -> Tuple[str, ...]:
-        return tuple(k) if sep == "" else tuple(k.split(sep))
+        return tuple(k) if sep == "" or k == "" else tuple(k.split(sep))
 
     return unflatten_dict({_prepare_key(k): v for k, v in d.items()})
