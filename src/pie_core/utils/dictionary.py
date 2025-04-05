@@ -18,15 +18,15 @@ def list_of_dicts2dict_of_lists(
     """Convert a list of dictionaries to a dictionary of lists.
 
     Example:
-        list_of_dicts = [
-            {"a": 1, "b": 2},
-            {"a": 3, "b": 4},
-            {"a": 5, "b": 6},
-        ]
-        list_of_dicts2dict_of_lists(list_of_dicts) == {
-            "a": [1, 3, 5],
-            "b": [2, 4, 6],
-        }
+        >>> l_of_d = [
+        >>>     {"a": 1, "b": 2},
+        >>>     {"a": 3, "b": 4},
+        >>>     {"a": 5, "b": 6},
+        >>> ]
+        >>> list_of_dicts2dict_of_lists(l_of_d) == {
+        >>>     "a": [1, 3, 5],
+        >>>     "b": [2, 4, 6],
+        >>> }
     """
 
     if keys is None:
@@ -38,15 +38,15 @@ def dict_of_lists2list_of_dicts(dict_of_lists: Dict[Hashable, List]) -> List[Dic
     """Convert a dictionary of lists to a list of dictionaries.
 
     Example:
-        dict_of_lists = {
-            "a": [1, 3, 5],
-            "b": [2, 4, 6],
-        }
-        dict_of_lists2list_of_dicts(dict_of_lists) == [
-            {"a": 1, "b": 2},
-            {"a": 3, "b": 4},
-            {"a": 5, "b": 6},
-        ]
+        >>> d_of_l = {
+        >>>    "a": [1, 3, 5],
+        >>>    "b": [2, 4, 6],
+        >>> }
+        >>> dict_of_lists2list_of_dicts(d_of_l) == [
+        >>>    {"a": 1, "b": 2},
+        >>>    {"a": 3, "b": 4},
+        >>>    {"a": 5, "b": 6},
+        >>>]
     """
     return [dict(zip(dict_of_lists.keys(), t)) for t in zip(*dict_of_lists.values())]
 
@@ -64,28 +64,36 @@ def _flatten_dict_gen(
 
 
 def flatten_dict(
-    d: MutableMapping, parent_key: str = "", sep: Optional[str] = None
-) -> Dict[Union[str, Tuple[str, ...]], Any]:
-    """Flatten a nested dictionary.
+    d: MutableMapping, parent_key: Tuple[str, ...] = ()
+) -> Dict[Tuple[str, ...], Any]:
+    """Flatten a nested dictionary with tuple keys.
 
     Example:
-        d = {"a": {"b": 1, "c": 2}, "d": 3}
-        flatten_nested_dict(d) == {"a/b": 1, "a/c": 2, "d": 3}
+        >>> d = {"a": {"b": 1, "c": 2}, "d": 3}
+        >>> flatten_dict(d) == {("a", "b"): 1, ("a", "c"): 2, ("d",): 3}
+    """
+    return dict(_flatten_dict_gen(d, parent_key=parent_key))
+
+
+def flatten_dict_s(
+    d: MutableMapping, parent_key: str = "", sep: str = "/"
+) -> Dict[Union[str, Tuple[str, ...]], Any]:
+    """Flatten a nested dictionary with string keys.
+
+    Example:
+        >>> d = {"a": {"b": 1, "c": 2}, "d": 3}
+        >>> flatten_dict_s(d) == {"a/b": 1, "a/c": 2, "d": 3}
     """
     parent_key_tuple: Tuple[str, ...]
-    if sep is None:
-        parent_key_tuple = (parent_key,) if parent_key != "" else ()
-        return dict(_flatten_dict_gen(d, parent_key=parent_key_tuple))
+    if sep == "" or parent_key == "":
+        parent_key_tuple = tuple(parent_key)
     else:
-        if sep == "" or parent_key == "":
-            parent_key_tuple = tuple(parent_key)
-        else:
-            parent_key_tuple = tuple(parent_key.split(sep))
-        return {sep.join(k): v for k, v in _flatten_dict_gen(d, parent_key=parent_key_tuple)}
+        parent_key_tuple = tuple(parent_key.split(sep))
+    return {sep.join(k): v for k, v in _flatten_dict_gen(d, parent_key=parent_key_tuple)}
 
 
-def _unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
-    """Unflattens a dictionary with nested keys.
+def unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
+    """Unflattens a dictionary with nested tuple keys.
 
     Example:
         >>> d = {("a", "b", "c"): 1, ("a", "b", "d"): 2, ("a", "e"): 3}
@@ -105,26 +113,16 @@ def _unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]
     return result
 
 
-def unflatten_dict(
-    d: Dict[Union[str, Tuple[str, ...]], Any], sep: Optional[str] = None
-) -> Union[Dict[str, Any], Any]:
-    """Unflattens a dictionary with nested keys.
+def unflatten_dict_s(d: Dict[str, Any], sep: str = "/") -> Dict[str, Any]:
+    """Unflattens a dictionary with nested string keys.
 
     Example:
         >>> d = {"a/b/c": 1, "a/b/d": 2, "a/e": 3}
-        >>> unflatten_dict(d, sep="/")
+        >>> unflatten_dict_s(d, sep="/")
         {'a': {'b': {'c': 1, 'd': 2}, 'e': 3}}
     """
 
-    def _prepare_key(k: Union[str, Tuple[str, ...]]) -> Tuple[str, ...]:
-        if isinstance(k, tuple):
-            return k
-        if sep is not None:
-            if sep == "":
-                return tuple(k)
-            elif isinstance(k, str):
-                return tuple(k.split(sep))
-        else:
-            return (k,)
+    def _prepare_key(k: str) -> Tuple[str, ...]:
+        return tuple(k) if sep == "" else tuple(k.split(sep))
 
-    return _unflatten_dict({_prepare_key(k): v for k, v in d.items()})
+    return unflatten_dict({_prepare_key(k): v for k, v in d.items()})
