@@ -141,7 +141,7 @@ def unflatten_dict(d: Dict[Tuple[str, ...], Any]) -> Union[Dict[str, Any], Any]:
     return result
 
 
-def unflatten_dict_s(d: Dict[str, Any], sep: str = "/") -> Dict[str, Any]:
+def unflatten_dict_s(d: Dict[str, Any], sep: str = "/") -> Union[Dict[str, Any], Any]:
     """Unflattens a dictionary with nested string keys.
 
     Example:
