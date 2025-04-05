@@ -5,9 +5,10 @@ from .module_mixins import (
     EnterDatasetMixin,
     ExitDatasetDictMixin,
     ExitDatasetMixin,
-    PreparableMixin,
     WithDocumentTypeMixin,
 )
+from .preparable import PreparableMixin
+from .registrable import Registrable
 from .statistic import DocumentStatistic
 from .taskmodule import (
     AutoTaskModule,

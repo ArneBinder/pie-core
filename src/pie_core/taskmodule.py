@@ -22,7 +22,8 @@ from tqdm import tqdm
 
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TOverride
-from pie_core.module_mixins import PreparableMixin, WithDocumentTypeMixin
+from pie_core.module_mixins import WithDocumentTypeMixin
+from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
 
 DocumentType = TypeVar("DocumentType", bound=Document)
