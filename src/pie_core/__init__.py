@@ -10,11 +10,13 @@ from .module_mixins import (
 from .preparable import PreparableMixin
 from .registrable import Registrable
 from .statistic import DocumentStatistic
-from .taskmodule import (
-    AutoTaskModule,
+from .taskencoding import (
     IterableTaskEncodingDataset,
     TaskEncoding,
     TaskEncodingDataset,
     TaskEncodingSequence,
+)
+from .taskmodule import (
+    AutoTaskModule,
     TaskModule,
 )
