@@ -1,5 +1,6 @@
 from pie_core.document import Annotation, AnnotationLayer, Document, annotation_field
 from pie_core.metric import DocumentMetric
+from pie_core.model import AutoModel, Model
 from pie_core.module_mixins import (
     EnterDatasetDictMixin,
     EnterDatasetMixin,
