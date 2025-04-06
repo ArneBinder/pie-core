@@ -1,7 +1,7 @@
 from typing import Generic, Type, TypeVar
 
-from pie_core import Registrable
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin
+from pie_core.registrable import Registrable
 
 T = TypeVar("T", bound="Auto")
 
