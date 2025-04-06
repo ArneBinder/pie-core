@@ -10,6 +10,8 @@ from huggingface_hub.file_download import hf_hub_download
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import SoftTemporaryDirectory, validate_hf_hub_args
 
+from pie_core.utils.dictionary import TNestedBoolDict, dict_update_nested
+
 logger = logging.getLogger(__name__)
 
 MODEL_CONFIG_NAME = CONFIG_NAME
@@ -19,41 +21,6 @@ TASKMODULE_CONFIG_TYPE_KEY = "taskmodule_type"
 
 # Generic variable that is either PieBaseHFHubMixin or a subclass thereof
 T = TypeVar("T", bound="PieBaseHFHubMixin")
-# recursive type: either bool or dict from str to this type again
-TOverride = Union[bool, Dict[str, "TOverride"]]
-
-
-def dict_update_nested(d: dict, u: dict, override: Optional[TOverride] = None) -> None:
-    """Update a dictionary with another dictionary, recursively.
-
-    Args:
-        d (`dict`):
-            The original dictionary to update.
-        u (`dict`):
-            The dictionary to use for the update.
-        override (`bool` or `dict`, *optional*):
-            If `True`, override the original dictionary with the new one.
-            If `False`, do not override any keys, just return the original dictionary.
-            If `None`, merge the dictionaries recursively.
-            If a dictionary, recursively merge the dictionaries, using the provided dictionary as the override.
-    Returns:
-        None
-    """
-    if isinstance(override, bool):
-        if override:
-            d.clear()
-            d.update(u)
-        return
-    if override is None:
-        override = {}
-
-    for k, v in u.items():
-        if isinstance(v, dict) and k in d:
-            if not isinstance(d[k], dict):
-                raise ValueError(f"Cannot merge {d[k]} and {v} because {d[k]} is not a dict.")
-            dict_update_nested(d[k], v, override=override.get(k))
-        else:
-            d[k] = v
 
 
 class PieBaseHFHubMixin:
@@ -395,7 +362,7 @@ class PieBaseHFHubMixin:
 
     @classmethod
     def _from_config(
-        cls: Type[T], config: dict, config_override: Optional[TOverride] = None, **kwargs
+        cls: Type[T], config: dict, config_override: Optional[TNestedBoolDict] = None, **kwargs
     ) -> T:
         """Instantiate from a configuration object.
 

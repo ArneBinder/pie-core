@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
-from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TOverride
+from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TNestedBoolDict
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
@@ -77,7 +77,7 @@ class TaskModule(
     def _from_config(
         cls: Type["TaskModule"],
         config: Dict[str, Any],
-        config_override: Optional[TOverride] = None,
+        config_override: Optional[TNestedBoolDict] = None,
         **kwargs,
     ) -> "TaskModule":
         taskmodule: TaskModule = super()._from_config(
