@@ -18,6 +18,7 @@ from pytorch_lightning.core.mixins import HyperparametersMixin
 from torchmetrics import Metric
 from tqdm import tqdm
 
+from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TOverride
 from pie_core.module_mixins import WithDocumentTypeMixin
@@ -47,7 +48,7 @@ class TaskModule(
     ABC,
     PieTaskModuleHFHubMixin,
     HyperparametersMixin,
-    Registrable,
+    Registrable["TaskModule"],
     WithDocumentTypeMixin,
     PreparableMixin,
     Generic[
@@ -65,7 +66,7 @@ class TaskModule(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        config[self.config_type_key] = TaskModule.name_for_object_class(self)
+        config[self.config_type_key] = self.base_class().name_for_object_class(self)
         # add all hparams
         config.update(self.hparams)
         # add all prepared attributes
@@ -372,14 +373,6 @@ class TaskModule(
         return None
 
 
-class AutoTaskModule(PieTaskModuleHFHubMixin):
+class AutoTaskModule(PieTaskModuleHFHubMixin, Auto[TaskModule]):
 
-    @classmethod
-    def from_config(cls, config: dict, **kwargs) -> TaskModule:
-        """Build a task module from a config dict."""
-        config = config.copy()
-        class_name = config.pop(cls.config_type_key)
-        # the class name may be overridden by the kwargs
-        class_name = kwargs.pop(cls.config_type_key, class_name)
-        clazz: Type[TaskModule] = TaskModule.by_name(class_name)
-        return clazz._from_config(config, **kwargs)
+    BASE_CLASS = TaskModule
