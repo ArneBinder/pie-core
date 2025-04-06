@@ -137,6 +137,53 @@ class PieBaseHFHubMixin:
         raise NotImplementedError
 
     @classmethod
+    def retrieve_config(
+        cls,
+        model_id: Union[str, Path],
+        force_download: bool = False,
+        resume_download: bool = False,
+        proxies: Optional[Dict] = None,
+        token: Optional[Union[str, bool]] = None,
+        cache_dir: Optional[Union[str, Path]] = None,
+        local_files_only: bool = False,
+        revision: Optional[str] = None,
+        fail_silently: bool = False,
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve the configuration file from the Huggingface Hub or local directory.
+
+        Returns None if the config file is not found.
+        """
+
+        config_file: Optional[str] = None
+        if os.path.isdir(model_id):
+            if cls.config_name in os.listdir(model_id):
+                config_file = os.path.join(model_id, cls.config_name)
+            else:
+                logger.warning(f"{cls.config_name} not found in {Path(model_id).resolve()}")
+        elif isinstance(model_id, str):
+            try:
+                config_file = hf_hub_download(
+                    repo_id=str(model_id),
+                    filename=cls.config_name,
+                    revision=revision,
+                    cache_dir=cache_dir,
+                    force_download=force_download,
+                    proxies=proxies,
+                    resume_download=resume_download,
+                    token=token,
+                    local_files_only=local_files_only,
+                )
+            except requests.exceptions.RequestException:
+                if not fail_silently:
+                    logger.warning(f"{cls.config_name} not found in HuggingFace Hub.")
+
+        if config_file is not None:
+            with open(config_file, encoding="utf-8") as f:
+                config = json.load(f)
+            return config
+        return None
+
+    @classmethod
     @validate_hf_hub_args
     def from_pretrained(
         cls: Type[T],
@@ -180,31 +227,19 @@ class PieBaseHFHubMixin:
                 Additional kwargs to pass to the model during initialization.
         """
         model_id = pretrained_model_name_or_path
-        config_file: Optional[str] = None
-        if os.path.isdir(model_id):
-            if cls.config_name in os.listdir(model_id):
-                config_file = os.path.join(model_id, cls.config_name)
-            else:
-                logger.warning(f"{cls.config_name} not found in {Path(model_id).resolve()}")
-        elif isinstance(model_id, str):
-            try:
-                config_file = hf_hub_download(
-                    repo_id=str(model_id),
-                    filename=cls.config_name,
-                    revision=revision,
-                    cache_dir=cache_dir,
-                    force_download=force_download,
-                    proxies=proxies,
-                    resume_download=resume_download,
-                    token=token,
-                    local_files_only=local_files_only,
-                )
-            except requests.exceptions.RequestException:
-                logger.warning(f"{cls.config_name} not found in HuggingFace Hub.")
 
-        if config_file is not None:
-            with open(config_file, encoding="utf-8") as f:
-                config = json.load(f)
+        config = cls.retrieve_config(
+            model_id=model_id,
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            proxies=proxies,
+            resume_download=resume_download,
+            local_files_only=local_files_only,
+            token=token,
+        )
+
+        if config is not None:
             model_kwargs.update({"config": config})
 
         # The value of is_from_pretrained is set to True when the model is loaded from pretrained.
