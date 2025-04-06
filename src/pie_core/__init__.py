@@ -1,4 +1,3 @@
-from pie_core import annotations, documents
 from pie_core.document import Annotation, AnnotationLayer, Document, annotation_field
 from pie_core.metric import DocumentMetric
 from pie_core.module_mixins import (
