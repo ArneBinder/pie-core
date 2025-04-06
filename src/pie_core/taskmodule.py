@@ -373,6 +373,6 @@ class TaskModule(
         return None
 
 
-class AutoTaskModule(Auto[TaskModule], PieTaskModuleHFHubMixin):
+class AutoTaskModule(PieTaskModuleHFHubMixin, Auto[TaskModule]):
 
     BASE_CLASS = TaskModule
