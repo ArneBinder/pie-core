@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
@@ -7,7 +6,7 @@ from pie_core.hf_hub_mixin import PieModelHFHubMixin
 from pie_core.registrable import Registrable
 
 
-class Model(PieModelHFHubMixin, HyperparametersMixin, Registrable, ABC):
+class Model(PieModelHFHubMixin, HyperparametersMixin, Registrable):
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
