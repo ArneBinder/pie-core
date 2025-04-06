@@ -1,6 +1,6 @@
 import inspect
 from collections import defaultdict
-from typing import Dict, Optional, Type, TypeVar
+from typing import Dict, Generic, Optional, Type, TypeVar
 
 
 class RegistrationError(Exception):
@@ -8,16 +8,35 @@ class RegistrationError(Exception):
 
 
 T = TypeVar("T", bound="Registrable")
+T2 = TypeVar("T2", bound="Registrable")
 
 
-class Registrable:
+class Registrable(Generic[T2]):
+    BASE_CLASS: Optional[Type[T2]] = None
     _registry: Dict[Type, Dict[str, Type]] = defaultdict(dict)
+
+    @classmethod
+    def base_class(cls) -> Type[T2]:
+        """Returns the base class of this registrable class."""
+        if cls.BASE_CLASS is None:
+            raise RegistrationError(
+                f"{cls.__class__.__name__} has no base class. "
+                f"Please call {cls.__class__.__name__}.register() to register it or "
+                "manually set BASE_CLASS to a subclass of Registrable."
+            )
+        return cls.BASE_CLASS
 
     @classmethod
     def register(
         cls: Type[T],
         name: Optional[str] = None,
     ):
+        if cls.BASE_CLASS is not None:
+            raise RegistrationError(
+                f"Cannot register {cls.__name__}; it is already registered as a subclass of {cls.BASE_CLASS.__name__}"
+            )
+        cls.BASE_CLASS = cls
+
         registry = Registrable._registry[cls]
 
         def add_subclass_to_registry(subclass: Type[T]) -> Type[T]:
