@@ -9,6 +9,7 @@ from typing import (
     ClassVar,
     Dict,
     Iterable,
+    Iterator,
     List,
     Optional,
     Set,
@@ -27,7 +28,7 @@ def _enumerate_dependencies(
     dependency_graph: Dict[str, List[str]],
     nodes: List[str],
     current_path: Optional[Set[str]] = None,
-):
+) -> None:
     current_path = current_path or set()
     for node in nodes:
         if node in current_path:
@@ -134,7 +135,7 @@ def annotation_field(
     target: Optional[str] = None,
     targets: Optional[List[str]] = None,
     named_targets: Optional[Dict[str, str]] = None,
-):
+) -> dataclasses.Field:
     """
     We allow 3 variants to pass targets:
     1) as single value `target: str`: this works if only one target is required,
@@ -176,7 +177,7 @@ class Annotation:
     )
     TARGET_NAMES: ClassVar[Optional[Tuple[str, ...]]] = None
 
-    def set_targets(self, value: Optional[Tuple[TARGET_TYPE, ...]]):
+    def set_targets(self, value: Optional[Tuple[TARGET_TYPE, ...]]) -> None:
         if value is not None and self._targets is not None:
             raise ValueError(
                 "Annotation already has assigned targets. Clear the "
@@ -277,7 +278,7 @@ class Annotation:
         cls,
         dct: Dict[str, Any],
         annotation_store: Optional[Dict[int, "Annotation"]] = None,
-    ):
+    ) -> "Annotation":
         tmp_dct = dict(dct)
         reference_fields_with_container_type = _get_reference_fields_and_container_types(cls)
         for field_name, container_type in reference_fields_with_container_type.items():
@@ -516,7 +517,7 @@ class Document(Mapping[str, Any]):
     _annotation_fields: Set[str] = dataclasses.field(default_factory=set, init=False, repr=False)
 
     @classmethod
-    def fields(cls):
+    def fields(cls) -> List[dataclasses.Field]:
         return [
             f
             for f in dataclasses.fields(cls)
@@ -581,13 +582,13 @@ class Document(Mapping[str, Any]):
             raise KeyError(f"Document has no attribute '{key}'.")
         return getattr(self, key)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._annotation_fields)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._annotation_fields)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         targeted = set()
         field_names = {field.name for field in dataclasses.fields(self)}
         field_types = self.field_types()
@@ -595,7 +596,7 @@ class Document(Mapping[str, Any]):
 
             self._annotation_fields.add(field.name)
 
-            targets = field.metadata.get("targets")
+            targets = field.metadata.get("targets", [])
             for target in targets:
                 targeted.add(target)
                 if field.name not in self._annotation_graph:
@@ -651,8 +652,8 @@ class Document(Mapping[str, Any]):
             )
         self._annotation_graph["_artificial_root"] = list(self._annotation_fields - targeted)
 
-    def asdict(self):
-        dct = {}
+    def asdict(self) -> Dict[str, Any]:
+        dct: Dict[str, Any] = {}
         for field in self.fields():
             value = getattr(self, field.name)
 
