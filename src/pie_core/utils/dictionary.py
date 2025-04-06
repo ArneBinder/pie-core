@@ -154,3 +154,40 @@ def unflatten_dict_s(d: Dict[str, Any], sep: str = "/") -> Union[Dict[str, Any],
         return tuple(k) if sep == "" or k == "" else tuple(k.split(sep))
 
     return unflatten_dict({_prepare_key(k): v for k, v in d.items()})
+
+
+# recursive type: either bool or dict from str to this type again
+TNestedBoolDict = Union[bool, Dict[str, "TNestedBoolDict"]]
+
+
+def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = None) -> None:
+    """Update a dictionary with another dictionary, recursively.
+
+    Args:
+        d (`dict`):
+            The original dictionary to update.
+        u (`dict`):
+            The dictionary to use for the update.
+        override (`bool` or `dict`, *optional*):
+            If `True`, override the original dictionary with the new one.
+            If `False`, do not override any keys, just return the original dictionary.
+            If `None`, merge the dictionaries recursively.
+            If a dictionary, recursively merge the dictionaries, using the provided dictionary as the override.
+    Returns:
+        None
+    """
+    if isinstance(override, bool):
+        if override:
+            d.clear()
+            d.update(u)
+        return
+    if override is None:
+        override = {}
+
+    for k, v in u.items():
+        if isinstance(v, dict) and k in d:
+            if not isinstance(d[k], dict):
+                raise ValueError(f"Cannot merge {d[k]} and {v} because {d[k]} is not a dict.")
+            dict_update_nested(d[k], v, override=override.get(k))
+        else:
+            d[k] = v
