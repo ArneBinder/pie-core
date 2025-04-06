@@ -337,7 +337,7 @@ class TaskModule(
         self,
         task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         task_outputs: Sequence[TaskOutput],
-    ):
+    ) -> None:
         for task_encoding, task_output in zip(task_encodings, task_outputs):
             self.combine_output(task_encoding, task_output)
 
@@ -345,7 +345,7 @@ class TaskModule(
         self,
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
-    ):
+    ) -> None:
         for annotation_name, annotation in self.create_annotations_from_output(
             task_encoding, task_output
         ):
