@@ -1,6 +1,6 @@
 import inspect
 from collections import defaultdict
-from typing import Dict, Generic, Optional, Type, TypeVar
+from typing import Callable, Dict, Generic, Optional, Type, TypeVar
 
 
 class RegistrationError(Exception):
@@ -30,7 +30,7 @@ class Registrable(Generic[T2]):
     def register(
         cls: Type[T],
         name: Optional[str] = None,
-    ):
+    ) -> Callable[[Type[T]], Type[T]]:
         if cls.BASE_CLASS is not None and cls is not cls.BASE_CLASS:
             raise RegistrationError(
                 f"Cannot register {cls.__name__}; it is already registered as a subclass of {cls.BASE_CLASS.__name__}"
