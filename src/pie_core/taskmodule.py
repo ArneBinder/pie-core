@@ -86,6 +86,24 @@ class TaskModule(
         taskmodule.post_prepare()
         return taskmodule
 
+    def on_encode_start(self) -> None:
+        """This method is called when the encoding starts.
+
+        It can be used to reset the task module state before encoding, e.g., resetting the
+        statistics, etc.
+        """
+        pass
+
+    def on_encode_end(self) -> None:
+        """This method is called when the encoding ends.
+
+        Important: When using lazy encoding (i.e. as_iterator=True), this will not be called!
+
+        It can be used to reset the task module state after encoding, show collected
+        statistics, etc.
+        """
+        pass
+
     def batch_encode(
         self,
         documents: Sequence[DocumentType],
@@ -152,6 +170,8 @@ class TaskModule(
     ]:
         self.assert_is_prepared()
 
+        self.on_encode_start()
+
         # backwards compatibility
         if as_task_encoding_sequence is None:
             as_task_encoding_sequence = not encode_target
@@ -165,6 +185,16 @@ class TaskModule(
         if document_batch_size is None:
             document_batch_size = self.encode_document_batch_size
 
+        result: Union[
+            Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            TaskEncodingSequence[
+                TaskEncoding[DocumentType, InputEncoding, TargetEncoding], DocumentType
+            ],
+            Iterator[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+        ]
+
         if as_iterator:
             if as_task_encoding_sequence:
                 raise ValueError("can not return a TaskEncodingSequence as Iterator")
@@ -175,9 +205,9 @@ class TaskModule(
                 show_progress=show_progress,
             )
             if as_dataset:
-                return IterableTaskEncodingDataset(encodings=encodings_iterator)
+                result = IterableTaskEncodingDataset(encodings=encodings_iterator)
             else:
-                return encodings_iterator
+                result = encodings_iterator
         else:
             encodings: List[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]] = []
             documents_in_order: List[DocumentType] = []
@@ -199,7 +229,7 @@ class TaskModule(
             if as_task_encoding_sequence:
                 if as_dataset:
                     raise ValueError("can not return a TaskEncodingSequence as a dataset")
-                return TaskEncodingSequence(
+                result = TaskEncodingSequence(
                     task_encodings=encodings,
                     documents_in_order=documents_in_order,
                 )
@@ -208,9 +238,14 @@ class TaskModule(
                 # we don't need the ordering of input documents and also don't re-assign
                 # task encodings to input documents
                 if as_dataset:
-                    return TaskEncodingDataset(encodings=encodings)
+                    result = TaskEncodingDataset(encodings=encodings)
                 else:
-                    return encodings
+                    result = encodings
+
+        if not as_iterator:
+            self.on_encode_end()
+
+        return result
 
     def encode_inputs(
         self,
