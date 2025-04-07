@@ -54,14 +54,6 @@ repos:
       - id: flake8
         args: ["--ignore", "E501,F401,F841,W503,E203,E704,E701", "--extend-select", "W504"]
 
-  # python security linter
-  # - repo: https://github.com/PyCQA/bandit
-  #   rev: "1.7.5"
-  #   hooks:
-  #     - id: bandit
-  #       args: ["-s", "B101"]
-
-
   # md formatting
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.22
