@@ -11,6 +11,9 @@ permissions:
 jobs:
     release:
         name: Release
+        permissions:
+          # write permission is required for "Detect and tag new version"
+          contents: write
         runs-on: ubuntu-latest
         steps:
           - name: Check out the repository
