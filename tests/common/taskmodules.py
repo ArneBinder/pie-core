@@ -9,15 +9,7 @@ workflow:
 
 import dataclasses
 import logging
-from typing import (
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypedDict,
-)
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TypedDict
 
 import numpy as np
 from typing_extensions import TypeAlias
