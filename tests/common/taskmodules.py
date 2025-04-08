@@ -83,12 +83,17 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
 
     def __init__(
         self,
+        labels: Optional[List[str]] = None,
         **kwargs,
     ) -> None:
         # Important: Remaining keyword arguments need to be passed to super.
         super().__init__(**kwargs)
         # Save all passed arguments. They will be available via self._config().
         self.save_hyperparameters()
+
+        self.labels = labels
+        self.token2id = {"PAD": 0}
+        self.id2token = {0: "PAD"}
 
     def _prepare(self, documents: Sequence[DocumentType]) -> None:
         """Prepare the task module with training documents, e.g. collect all possible labels.
@@ -115,8 +120,6 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
         self.label_to_id = {label: i + 1 for i, label in enumerate(self.labels)}
         self.label_to_id["O"] = 0
         self.id_to_label = {v: k for k, v in self.label_to_id.items()}
-        self.token2id = {"PAD": 0}
-        self.id2token = {0: "PAD"}
 
     def tokenize(self, text: str) -> List[int]:
         """Tokenize the input text using the tokenizer."""

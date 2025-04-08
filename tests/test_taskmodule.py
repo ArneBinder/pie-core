@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -92,6 +93,22 @@ def test_prepare(taskmodule) -> None:
         "taskmodule_type": "SimpleTransformerTextClassificationTaskModule",
         "labels": ["Negative", "Positive"],
     }
+    assert_post_prepare(taskmodule)
+
+
+def assert_post_prepare(taskmodule) -> None:
+    assert taskmodule.label_to_id == {"Negative": 1, "O": 0, "Positive": 2}
+    assert taskmodule.id_to_label == {0: "O", 1: "Negative", 2: "Positive"}
+
+
+def test_from_config(taskmodule) -> None:
+    taskmodule_from_config = SimpleTransformerTextClassificationTaskModule.from_config(
+        taskmodule.config
+    )
+    assert type(taskmodule_from_config) is SimpleTransformerTextClassificationTaskModule
+    assert taskmodule_from_config.is_prepared
+    assert taskmodule_from_config.config == taskmodule.config
+    assert_post_prepare(taskmodule_from_config)
 
 
 @pytest.fixture(scope="module")
@@ -159,6 +176,22 @@ def test_task_encoding(task_encoding, task_encoding_without_targets, targets):
     assert task_encoding.inputs == task_encoding_without_targets.inputs
     assert task_encoding.has_targets
     assert task_encoding.targets == targets
+
+
+def test_encode_from_iterable(taskmodule, documents, task_encodings):
+
+    def documents_iterator():
+        yield from documents
+
+    task_encodings_iter = taskmodule.encode(documents_iterator(), encode_target=True)
+    assert not isinstance(task_encodings_iter, Sequence)
+    assert isinstance(task_encodings_iter, Generator)
+    task_encodings_list = list(task_encodings_iter)
+    assert len(task_encodings_list) == len(task_encodings)
+    for task_encoding1, task_encoding2 in zip(task_encodings, task_encodings_list):
+        assert task_encoding1.document == task_encoding2.document
+        assert task_encoding1.inputs == task_encoding2.inputs
+        assert task_encoding1.targets == task_encoding2.targets
 
 
 def test_collate_without_targets(taskmodule, task_encoding_without_targets):
