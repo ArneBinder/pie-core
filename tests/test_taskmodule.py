@@ -3,8 +3,6 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import pytest
-import torch
-from transformers import BatchEncoding
 
 from pie_core import AnnotationLayer, Document, annotation_field
 from tests.common.taskmodules import SimpleTransformerTextClassificationTaskModule
@@ -18,15 +16,14 @@ def _config_to_str(cfg: Dict[str, Any]) -> str:
 
 
 CONFIGS = [
-    {"max_length": 16},
-    {"max_length": 8},
+    {},
 ]
 
 CONFIGS_DICT = {_config_to_str(cfg): cfg for cfg in CONFIGS}
 
 
 @pytest.fixture(scope="module", params=CONFIGS_DICT.keys())
-def config(request):
+def config(request) -> Dict[str, Any]:
     """
     - Provides taskmodule configuration for testing.
     - Yields config dictionaries from the CONFIGS list to produce clean test case identifiers.
@@ -36,18 +33,16 @@ def config(request):
 
 
 @pytest.fixture(scope="module")
-def unprepared_taskmodule(config):
+def unprepared_taskmodule(config) -> SimpleTransformerTextClassificationTaskModule:
     """
     - Prepares a task module with the specified tokenizer and configuration.
     - Sets up the task module with an unprepared state for testing purposes.
 
     """
-    return SimpleTransformerTextClassificationTaskModule(
-        tokenizer_name_or_path="prajjwal1/bert-tiny", **config
-    )
+    return SimpleTransformerTextClassificationTaskModule(**config)
 
 
-def test_taskmodule(unprepared_taskmodule):
+def test_taskmodule(unprepared_taskmodule) -> None:
     assert unprepared_taskmodule is not None
     assert not unprepared_taskmodule.is_prepared
 
@@ -59,7 +54,7 @@ class ExampleDocument(Document):
 
 
 @pytest.fixture(scope="module")
-def documents():
+def documents() -> list[ExampleDocument]:
     """
     - Creates example documents with predefined texts.
     - Assigns labels to the documents for testing purposes.
@@ -79,7 +74,7 @@ def documents():
 
 
 @pytest.fixture(scope="module")
-def taskmodule(unprepared_taskmodule, documents):
+def taskmodule(unprepared_taskmodule, documents) -> SimpleTransformerTextClassificationTaskModule:
     """
     - Prepares the task module with the given documents, i.e. collect available label values.
     - Calls the necessary methods to prepare the task module with the documents.
@@ -90,7 +85,7 @@ def taskmodule(unprepared_taskmodule, documents):
     return unprepared_taskmodule
 
 
-def test_prepare(taskmodule):
+def test_prepare(taskmodule) -> None:
     assert taskmodule is not None
     assert taskmodule.is_prepared
     assert taskmodule.label_to_id == {"O": 0, "Negative": 1, "Positive": 2}
@@ -106,55 +101,32 @@ def task_encoding_without_targets(taskmodule, documents):
     return taskmodule.encode_input(documents[0])
 
 
-def test_encode_input(task_encoding_without_targets, documents, taskmodule):
+def test_encode_input(task_encoding_without_targets, documents, taskmodule) -> None:
     assert task_encoding_without_targets is not None
     assert task_encoding_without_targets.document == documents[0]
     assert not task_encoding_without_targets.has_targets
-    assert set(task_encoding_without_targets.inputs) == {
-        "token_type_ids",
-        "input_ids",
-        "attention_mask",
-    }
-    if taskmodule.max_length == 8:
-        expected_input_tokens = ["[CLS]", "may", "your", "code", "be", "bug", "-", "[SEP]"]
-        input_tokens = taskmodule.tokenizer.convert_ids_to_tokens(
-            task_encoding_without_targets.inputs["input_ids"]
-        )
-        assert input_tokens == expected_input_tokens
-        assert task_encoding_without_targets.inputs["attention_mask"] == [1] * len(
-            expected_input_tokens
-        )
-    else:
-        expected_input_tokens = [
-            "[CLS]",
-            "may",
-            "your",
-            "code",
-            "be",
-            "bug",
-            "-",
-            "free",
-            "and",
-            "your",
-            "algorithms",
-            "opt",
-            "##imi",
-            "##zed",
-            "!",
-            "[SEP]",
-        ]
-        input_tokens = taskmodule.tokenizer.convert_ids_to_tokens(
-            task_encoding_without_targets.inputs["input_ids"]
-        )
-        assert input_tokens == expected_input_tokens
-        assert task_encoding_without_targets.inputs["attention_mask"] == [1] * len(
-            expected_input_tokens
-        )
+
+    input_ids = task_encoding_without_targets.inputs
+    assert input_ids == [1, 2, 3, 4, 5, 6, 2, 7, 8]
+    input_tokens = taskmodule.token_ids2tokens(input_ids)
+    assert input_tokens == [
+        "May",
+        "your",
+        "code",
+        "be",
+        "bug-free",
+        "and",
+        "your",
+        "algorithms",
+        "optimized!",
+    ]
+
     assert task_encoding_without_targets.metadata == {}
+    assert not task_encoding_without_targets.has_targets
 
 
 @pytest.fixture(scope="module")
-def target(taskmodule, task_encoding_without_targets):
+def target(taskmodule, task_encoding_without_targets) -> int:
     """
     - Encodes the target for a given task encoding.
     - Generates encoded targets for a specific task encoding.
@@ -163,7 +135,7 @@ def target(taskmodule, task_encoding_without_targets):
     return taskmodule.encode_target(task_encoding_without_targets)
 
 
-def test_target(target, taskmodule):
+def test_target(target, taskmodule) -> None:
     expected_label = "Positive"
     label_tokens = taskmodule.id_to_label[target]
     assert label_tokens == expected_label
@@ -199,117 +171,9 @@ def batch(taskmodule, task_encoding_without_targets):
 def test_collate(batch, taskmodule):
     assert batch is not None
     assert len(batch) == 2
-    batch_encoding, _ = batch
-    if taskmodule.max_length == 8:
-        input_ids_expected = torch.tensor(
-            [
-                [101, 2089, 2115, 3642, 2022, 11829, 1011, 102],
-                [101, 2089, 2115, 3642, 2022, 11829, 1011, 102],
-            ],
-            dtype=torch.int64,
-        )
-        attention_mask_expected = torch.tensor(
-            [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]], dtype=torch.int64
-        )
-        token_type_ids_expected = torch.tensor(
-            [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]], dtype=torch.int64
-        )
-        encoding_expected = BatchEncoding(
-            data={
-                "input_ids": input_ids_expected,
-                "attention_mask": attention_mask_expected,
-                "token_type_ids": token_type_ids_expected,
-            }
-        )
-    else:
-        input_ids_expected = torch.tensor(
-            [
-                [
-                    101,
-                    2089,
-                    2115,
-                    3642,
-                    2022,
-                    11829,
-                    1011,
-                    2489,
-                    1998,
-                    2115,
-                    13792,
-                    23569,
-                    27605,
-                    5422,
-                    999,
-                    102,
-                ],
-                [
-                    101,
-                    2089,
-                    2115,
-                    3642,
-                    2022,
-                    11829,
-                    1011,
-                    2489,
-                    1998,
-                    2115,
-                    13792,
-                    23569,
-                    27605,
-                    5422,
-                    999,
-                    102,
-                ],
-            ],
-            dtype=torch.int64,
-        )
-        attention_mask_expected = torch.tensor(
-            [
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            ],
-            dtype=torch.int64,
-        )
-        token_type_ids_expected = torch.tensor(
-            [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            ],
-            dtype=torch.int64,
-        )
-        encoding_expected = BatchEncoding(
-            data={
-                "input_ids": input_ids_expected,
-                "attention_mask": attention_mask_expected,
-                "token_type_ids": token_type_ids_expected,
-            }
-        )
-    assert set(batch_encoding.data) == set(encoding_expected.data)
-    torch.testing.assert_close(batch_encoding.input_ids, encoding_expected.input_ids)
-    torch.testing.assert_close(batch_encoding.attention_mask, encoding_expected.attention_mask)
-    torch.testing.assert_close(batch_encoding.token_type_ids, encoding_expected.token_type_ids)
-
-
-# This is not used, but can be used to create a batch of task encodings with targets for the unbatched_outputs fixture.
-@pytest.fixture(scope="module")
-def model_predict_output(batch, taskmodule):
-    """
-    - Initializes and predicts the model outputs for the given batch.
-    - Creates an instance of TransformerTextClassificationModel and passes the batch through it.
-    - Returns the model's output predictions.
-
-    """
-    from pytorch_ie import TransformerTextClassificationModel
-
-    model = TransformerTextClassificationModel(
-        model_name_or_path="prajjwal1/bert-tiny",
-        num_classes=len(taskmodule.label_to_id),
-        t_total=1000,
-        tokenizer_vocab_size=len(taskmodule.tokenizer),
-    )
-    input, target = batch
-    result = model(input)
-    return result
+    inputs, targets = batch
+    assert targets is None
+    assert inputs == [[1, 2, 3, 4, 5, 6, 2, 7, 8], [1, 2, 3, 4, 5, 6, 2, 7, 8]]
 
 
 @pytest.fixture(scope="module")
@@ -320,15 +184,15 @@ def unbatched_outputs(taskmodule):
     - Model output can be created with model_predict_output fixture above.
 
     """
-    model_output = {"logits": torch.tensor([[0.0513, 0.7510, -0.3345], [0.7510, 0.0513, -0.3345]])}
+    model_output = {"logits": [[0.0513, 0.7510, -0.3345], [0.7510, 0.0513, -0.3345]]}
     return taskmodule.unbatch_output(model_output)
 
 
 def test_unpatch_output(unbatched_outputs):
     assert unbatched_outputs is not None
     assert unbatched_outputs == [
-        {"label": "Negative", "probability": 0.5451174378395081},
-        {"label": "O", "probability": 0.5451174378395081},
+        {"label": "Negative", "probability": 0.5451},
+        {"label": "O", "probability": 0.5451},
     ]
 
 

@@ -10,10 +10,9 @@ workflow:
 import dataclasses
 import logging
 from typing import (
-    Any,
     Dict,
     Iterator,
-    MutableMapping,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -21,8 +20,6 @@ from typing import (
 )
 
 import numpy as np
-import torch
-from transformers import AutoTokenizer
 from typing_extensions import TypeAlias
 
 from pie_core import AnnotationLayer, TaskEncoding, TaskModule, annotation_field
@@ -43,12 +40,15 @@ class TaskOutput(TypedDict, total=False):
 
 # Define task specific input and output types
 DocumentType: TypeAlias = TestDocumentWithLabel
-InputEncodingType: TypeAlias = MutableMapping[str, Any]
+InputEncodingType: TypeAlias = List[int]
 TargetEncodingType: TypeAlias = int
-# ModelEncodingType: TypeAlias = ModelStepInputType
-ModelEncodingType = Dict[str, torch.Tensor]
-# ModelOutputType: TypeAlias = ModelOutputType
-ModelOutputType = Dict[str, torch.Tensor]
+ModelInputType = List[List[int]]
+ModelTargetType = List[int]
+ModelEncodingType: TypeAlias = Tuple[
+    ModelInputType,
+    Optional[ModelTargetType],
+]
+ModelOutputType = Dict[str, List[List[float]]]
 TaskOutputType: TypeAlias = TaskOutput
 
 # This should be the same for all taskmodules
@@ -63,6 +63,25 @@ TaskModuleType: TypeAlias = TaskModule[
 ]
 
 
+def softmax(scores: List[float]) -> List[float]:
+    """Compute the softmax of a list of scores."""
+    max_score = max(scores)
+    exp_scores = [np.exp(score - max_score) for score in scores]
+    sum_exp_scores = sum(exp_scores)
+    return [score / sum_exp_scores for score in exp_scores]
+
+
+def argmax(scores: List[float]) -> int:
+    """Get the index of the maximum score."""
+    max_index = 0
+    max_value = scores[0]
+    for i, score in enumerate(scores):
+        if score > max_value:
+            max_value = score
+            max_index = i
+    return max_index
+
+
 @TaskModule.register()
 class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
     # If these attributes are set, the taskmodule is considered as prepared. They should be calculated
@@ -72,23 +91,12 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
 
     def __init__(
         self,
-        tokenizer_name_or_path: str,
-        max_length: Optional[int] = None,
-        label_to_id: Optional[Dict[str, int]] = None,
         **kwargs,
     ) -> None:
         # Important: Remaining keyword arguments need to be passed to super.
         super().__init__(**kwargs)
         # Save all passed arguments. They will be available via self._config().
         self.save_hyperparameters()
-
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path)
-
-        # some tokenization and padding parameters
-        self.max_length = max_length
-
-        # this will be prepared from the data or loaded from the config
-        self.label_to_id = label_to_id
 
     def _prepare(self, documents: Sequence[DocumentType]) -> None:
         """Prepare the task module with training documents, e.g. collect all possible labels.
@@ -115,6 +123,27 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
         self.label_to_id = {label: i + 1 for i, label in enumerate(self.labels)}
         self.label_to_id["O"] = 0
         self.id_to_label = {v: k for k, v in self.label_to_id.items()}
+        self.token2id = {"PAD": 0}
+        self.id2token = {0: "PAD"}
+
+    def tokenize(self, text: str) -> List[int]:
+        """Tokenize the input text using the tokenizer."""
+        # Tokenize the input text via whitespace
+        tokens = text.split(" ")
+        ids = []
+        for token in tokens:
+            # If the token is not already in the vocabulary, add it
+            if token not in self.token2id:
+                self.token2id[token] = len(self.token2id)
+            ids.append(self.token2id[token])
+        return ids
+
+    def token_ids2tokens(self, ids: List[int]) -> List[str]:
+        """Convert token ids back to tokens."""
+        if len(self.id2token) != len(self.token2id):
+            self.id2token = {v: k for k, v in self.token2id.items()}
+
+        return [self.id2token[id] for id in ids]
 
     def encode_input(
         self,
@@ -123,14 +152,7 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
         """Create one or multiple task encodings for the given document."""
 
         # tokenize the input text, this will be the input
-        inputs = self.tokenizer(
-            document.text,
-            # we do not pad here, this will be done in collate()
-            # when the actual batches are created
-            padding=False,
-            truncation=True,
-            max_length=self.max_length,
-        )
+        inputs = self.tokenize(document.text)
 
         return TaskEncoding(
             document=document,
@@ -149,29 +171,20 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
         # as above, all annotations are hold in lists, so we have to take its first element
         label_annotation = task_encoding.document.label[0]
         # translate the textual label to the target id
-        assert self.label_to_id is not None
+        if self.label_to_id is None:
+            raise ValueError(
+                "Task module is not prepared. Call prepare() or post_prepare() first."
+            )
         return self.label_to_id[label_annotation.label]
 
     def collate(self, task_encodings: Sequence[TaskEncodingType]) -> ModelEncodingType:
         """Convert a list of task encodings to a batch that will be passed to the model."""
         # get the inputs from the task encodings
-        input_features = [task_encoding.inputs for task_encoding in task_encodings]
-
-        # pad the inputs and return torch tensors
-        inputs = self.tokenizer.pad(
-            input_features,
-            # padding=self.padding,
-            padding=True,
-            max_length=self.max_length,
-            pad_to_multiple_of=None,
-            return_tensors="pt",
-        )
+        inputs = [task_encoding.inputs for task_encoding in task_encodings]
 
         if task_encodings[0].has_targets:
-            # convert the targets (label ids) to a tensor
-            targets = torch.tensor(
-                [task_encoding.targets for task_encoding in task_encodings], dtype=torch.int64
-            )
+            # get the targets (label ids) from the task encodings
+            targets = [task_encoding.targets for task_encoding in task_encodings]
         else:
             # during inference, we do not have any targets
             targets = None
@@ -185,17 +198,17 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
         logits = model_output["logits"]
 
         # convert the logits to "probabilities"
-        probabilities = logits.softmax(dim=-1).detach().cpu().float().numpy()
+        probabilities = [softmax(scores) for scores in logits]
 
         # get the max class index per example
-        max_label_ids = np.argmax(probabilities, axis=-1)
+        max_label_ids = [argmax(probs) for probs in probabilities]
 
         outputs = []
         for idx, label_id in enumerate(max_label_ids):
             # translate the label id back to the label text
             label = self.id_to_label[label_id]
             # get the probability and convert from tensor value to python float
-            prob = float(probabilities[idx, label_id])
+            prob = round(float(probabilities[idx][label_id]), 4)
             # we create TransformerTextClassificationTaskOutput primarily for typing purposes,
             # a simple dict would also work
             result: TaskOutput = {
