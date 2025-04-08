@@ -1,4 +1,4 @@
-from copy import copy
+import copy
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -222,13 +222,22 @@ def test_annotations_from_output(annotations_from_output):
     assert annotations_from_output[1] == ("label", Label(label="O", score=0.5451174378395081))
 
 
-def test_decode(task_encodings, task_outputs, taskmodule, documents) -> None:
+@pytest.mark.parametrize("inplace", [True, False])
+def test_decode(task_outputs, taskmodule, documents, inplace) -> None:
+    # create a copy of the documents to not modify the original documents
+    documents = copy.deepcopy(documents)
+    task_encodings = taskmodule.encode(documents, encode_target=False)
     # use inplace=False to not modify the original documents
-    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs, inplace=False)
+    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs, inplace=inplace)
+    if inplace:
+        # check if the documents are the same
+        for doc, doc_with_pred in zip(documents, docs_with_predictions):
+            assert doc is doc_with_pred
+    else:
+        # check if the documents are different
+        for doc, doc_with_pred in zip(documents, docs_with_predictions):
+            assert doc is not doc_with_pred
     assert len(docs_with_predictions) == 2
-    # check if the documents are different
-    assert docs_with_predictions[0] is not documents[0]
-    assert docs_with_predictions[1] is not documents[1]
     # assert docs_with_predictions[0] == documents[0]
     assert documents[0].label.resolve() == ["Positive"]
     assert docs_with_predictions[0].label.predictions.resolve() == ["Negative"]
