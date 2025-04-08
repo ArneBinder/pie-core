@@ -18,7 +18,7 @@ from pie_core.document import (
     _is_tuple_of_annotation_types,
     annotation_field,
 )
-from tests.common import (
+from tests.common.types import (
     BinaryRelation,
     Label,
     LabeledSpan,
