@@ -88,8 +88,10 @@ def taskmodule(unprepared_taskmodule, documents) -> SimpleTransformerTextClassif
 def test_prepare(taskmodule) -> None:
     assert taskmodule is not None
     assert taskmodule.is_prepared
-    assert taskmodule.label_to_id == {"O": 0, "Negative": 1, "Positive": 2}
-    assert taskmodule.id_to_label == {0: "O", 1: "Negative", 2: "Positive"}
+    assert taskmodule.config == {
+        "taskmodule_type": "SimpleTransformerTextClassificationTaskModule",
+        "labels": ["Negative", "Positive"],
+    }
 
 
 @pytest.fixture(scope="module")
@@ -126,7 +128,7 @@ def test_encode_input(task_encoding_without_targets, documents, taskmodule) -> N
 
 
 @pytest.fixture(scope="module")
-def target(taskmodule, task_encoding_without_targets) -> int:
+def targets(taskmodule, task_encoding_without_targets) -> int:
     """
     - Encodes the target for a given task encoding.
     - Generates encoded targets for a specific task encoding.
@@ -135,49 +137,50 @@ def target(taskmodule, task_encoding_without_targets) -> int:
     return taskmodule.encode_target(task_encoding_without_targets)
 
 
-def test_target(target, taskmodule) -> None:
+def test_targets(targets, taskmodule) -> None:
     expected_label = "Positive"
-    label_tokens = taskmodule.id_to_label[target]
+    label_tokens = taskmodule.id_to_label[targets]
     assert label_tokens == expected_label
 
 
 @pytest.fixture(scope="module")
-def task_encoding(task_encoding_without_targets, target):
-    """
-    - Combines the task encoding with the associated target.
-    - Creates a new task encoding by copying the original and including the target.
-
-    """
-    result = copy(task_encoding_without_targets)
-    result.targets = target
-    return result
-
-
-def test_task_encoding(task_encoding):
-    assert task_encoding is not None
+def task_encodings(taskmodule, documents):
+    return taskmodule.encode(documents, encode_target=True)
 
 
 @pytest.fixture(scope="module")
-def batch(taskmodule, task_encoding_without_targets):
-    """
-    - Collates a list of task encodings into a batch.
-    - Prepares a batch of task encodings for efficient processing.
-
-    """
-    task_encodings = [task_encoding_without_targets, task_encoding_without_targets]
-    return taskmodule.collate(task_encodings)
+def task_encoding(taskmodule, task_encodings, targets):
+    return task_encodings[0]
 
 
-def test_collate(batch, taskmodule):
-    assert batch is not None
-    assert len(batch) == 2
-    inputs, targets = batch
+def test_task_encoding(task_encoding, task_encoding_without_targets, targets):
+    assert task_encoding is not None
+    assert task_encoding.document == task_encoding_without_targets.document
+    assert task_encoding.inputs == task_encoding_without_targets.inputs
+    assert task_encoding.has_targets
+    assert task_encoding.targets == targets
+
+
+def test_collate_without_targets(taskmodule, task_encoding_without_targets):
+    batch_without_targets = taskmodule.collate(
+        [task_encoding_without_targets, task_encoding_without_targets]
+    )
+    assert batch_without_targets is not None
+    inputs, targets = batch_without_targets
     assert targets is None
     assert inputs == [[1, 2, 3, 4, 5, 6, 2, 7, 8], [1, 2, 3, 4, 5, 6, 2, 7, 8]]
 
 
+def test_collate(taskmodule, task_encoding):
+    batch = taskmodule.collate([task_encoding, task_encoding])
+    assert batch is not None
+    inputs, targets = batch
+    assert inputs == [[1, 2, 3, 4, 5, 6, 2, 7, 8], [1, 2, 3, 4, 5, 6, 2, 7, 8]]
+    assert targets == [2, 2]
+
+
 @pytest.fixture(scope="module")
-def unbatched_outputs(taskmodule):
+def task_outputs(taskmodule):
     """
     - Converts model outputs from batched to unbatched format.
     - Helps in further processing of model outputs for individual task encodings.
@@ -188,23 +191,23 @@ def unbatched_outputs(taskmodule):
     return taskmodule.unbatch_output(model_output)
 
 
-def test_unpatch_output(unbatched_outputs):
-    assert unbatched_outputs is not None
-    assert unbatched_outputs == [
+def test_unpatch_output(task_outputs):
+    assert task_outputs is not None
+    assert task_outputs == [
         {"label": "Negative", "probability": 0.5451},
         {"label": "O", "probability": 0.5451},
     ]
 
 
 @pytest.fixture(scope="module")
-def annotations_from_output(taskmodule, task_encoding_without_targets, unbatched_outputs):
+def annotations_from_output(taskmodule, task_encoding_without_targets, task_outputs):
     """Converts the inputs (task_encoding_without_targets) and the respective model outputs
     (unbatched_outputs) into human-readable  annotations."""
     task_encodings = [task_encoding_without_targets, task_encoding_without_targets]
-    assert len(task_encodings) == len(unbatched_outputs)
+    assert len(task_encodings) == len(task_outputs)
     named_annotations = []
-    for task_encoding, task_output in zip(task_encodings, unbatched_outputs):
-        annotations = taskmodule.create_annotations_from_output(task_encoding, task_output)
+    for _task_encoding, _task_output in zip(task_encodings, task_outputs):
+        annotations = taskmodule.create_annotations_from_output(_task_encoding, _task_output)
         named_annotations.extend(annotations)
     return named_annotations
 
@@ -217,3 +220,18 @@ def test_annotations_from_output(annotations_from_output):
         Label(label="Negative", score=0.5451174378395081),
     )
     assert annotations_from_output[1] == ("label", Label(label="O", score=0.5451174378395081))
+
+
+def test_decode(task_encodings, task_outputs, taskmodule, documents) -> None:
+    # use inplace=False to not modify the original documents
+    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs, inplace=False)
+    assert len(docs_with_predictions) == 2
+    # check if the documents are different
+    assert docs_with_predictions[0] is not documents[0]
+    assert docs_with_predictions[1] is not documents[1]
+    # assert docs_with_predictions[0] == documents[0]
+    assert documents[0].label.resolve() == ["Positive"]
+    assert docs_with_predictions[0].label.predictions.resolve() == ["Negative"]
+    # assert docs_with_predictions[1] == documents[1]
+    assert documents[1].label.resolve() == ["Negative"]
+    assert docs_with_predictions[1].label.predictions.resolve() == ["O"]
