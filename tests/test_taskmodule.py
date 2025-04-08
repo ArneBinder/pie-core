@@ -3,16 +3,13 @@ from collections.abc import Generator, Sequence
 
 import pytest
 
-from tests.common.taskmodules import (
-    SimpleTransformerTextClassificationTaskModule,
-    TestDocumentWithLabel,
-)
+from tests.common.taskmodules import TestDocumentWithLabel, TestTaskModule
 from tests.common.types import Label
 
 
 @pytest.fixture(scope="module")
-def unprepared_taskmodule() -> SimpleTransformerTextClassificationTaskModule:
-    return SimpleTransformerTextClassificationTaskModule()
+def unprepared_taskmodule() -> TestTaskModule:
+    return TestTaskModule()
 
 
 def test_taskmodule(unprepared_taskmodule) -> None:
@@ -38,7 +35,7 @@ def documents() -> list[TestDocumentWithLabel]:
 
 
 @pytest.fixture(scope="module")
-def taskmodule(unprepared_taskmodule, documents) -> SimpleTransformerTextClassificationTaskModule:
+def taskmodule(unprepared_taskmodule, documents) -> TestTaskModule:
     """
     - Prepares the task module with the given documents, i.e. collect available label values.
     - Calls the necessary methods to prepare the task module with the documents.
@@ -53,7 +50,7 @@ def test_prepare(taskmodule) -> None:
     assert taskmodule is not None
     assert taskmodule.is_prepared
     assert taskmodule.config == {
-        "taskmodule_type": "SimpleTransformerTextClassificationTaskModule",
+        "taskmodule_type": "TestTaskModule",
         "labels": ["Negative", "Positive"],
     }
     assert_is_post_prepared(taskmodule)
@@ -65,10 +62,8 @@ def assert_is_post_prepared(taskmodule) -> None:
 
 
 def test_from_config(taskmodule) -> None:
-    taskmodule_from_config = SimpleTransformerTextClassificationTaskModule.from_config(
-        taskmodule.config
-    )
-    assert type(taskmodule_from_config) is SimpleTransformerTextClassificationTaskModule
+    taskmodule_from_config = TestTaskModule.from_config(taskmodule.config)
+    assert type(taskmodule_from_config) is TestTaskModule
     assert taskmodule_from_config.is_prepared
     assert taskmodule_from_config.config == taskmodule.config
     assert_is_post_prepared(taskmodule_from_config)

@@ -75,7 +75,7 @@ def argmax(scores: List[float]) -> int:
 
 
 @TaskModule.register()
-class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
+class TestTaskModule(TaskModuleType):
     # If these attributes are set, the taskmodule is considered as prepared. They should be calculated
     # within _prepare() and are dumped automatically when saving the taskmodule with save_pretrained().
     PREPARED_ATTRIBUTES = ["labels"]
