@@ -1,11 +1,12 @@
 import copy
 from collections.abc import Generator, Sequence
-from dataclasses import dataclass
 
 import pytest
 
-from pie_core import AnnotationLayer, Document, annotation_field
-from tests.common.taskmodules import SimpleTransformerTextClassificationTaskModule
+from tests.common.taskmodules import (
+    SimpleTransformerTextClassificationTaskModule,
+    TestDocumentWithLabel,
+)
 from tests.common.types import Label
 
 
@@ -19,29 +20,20 @@ def test_taskmodule(unprepared_taskmodule) -> None:
     assert not unprepared_taskmodule.is_prepared
 
 
-@dataclass
-class ExampleDocument(Document):
-    text: str
-    label: AnnotationLayer[Label] = annotation_field()
-
-
 @pytest.fixture(scope="module")
-def documents() -> list[ExampleDocument]:
+def documents() -> list[TestDocumentWithLabel]:
     """
     - Creates example documents with predefined texts.
     - Assigns labels to the documents for testing purposes.
 
     """
-    doc1 = ExampleDocument(text="May your code be bug-free and your algorithms optimized!")
-    doc2 = ExampleDocument(
+    doc1 = TestDocumentWithLabel(text="May your code be bug-free and your algorithms optimized!")
+    doc2 = TestDocumentWithLabel(
         text="A cascading failure occurred, resulting in a complete system crash and irreversible data loss."
     )
-    # assign label
-    label1 = Label(label="Positive")
-    label2 = Label(label="Negative")
-    # add label
-    doc1.label.append(label1)
-    doc2.label.append(label2)
+    # add labels
+    doc1.label.append(Label(label="Positive"))
+    doc2.label.append(Label(label="Negative"))
     return [doc1, doc2]
 
 
