@@ -1,5 +1,4 @@
 import dataclasses
-import json
 from typing import Any, Dict, Optional
 
 from pie_core import Annotation, AnnotationLayer, Document, annotation_field
@@ -92,13 +91,3 @@ class TestDocumentWithEntities(TextBasedDocument):
 @dataclasses.dataclass
 class TestDocumentWithSentences(TextBasedDocument):
     sentences: AnnotationLayer[Span] = annotation_field(target="text")
-
-
-def _test_annotation_reconstruction(
-    annotation: Annotation, annotation_store: Optional[Dict[int, Annotation]] = None
-):
-    ann_str = json.dumps(annotation.asdict())
-    annotation_reconstructed = type(annotation).fromdict(
-        json.loads(ann_str), annotation_store=annotation_store
-    )
-    assert annotation_reconstructed == annotation

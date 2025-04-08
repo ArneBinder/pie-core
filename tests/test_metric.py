@@ -9,8 +9,7 @@ from pie_core import (
     DocumentMetric,
     annotation_field,
 )
-
-from .common import LabeledSpan, TextBasedDocument
+from tests.common.types import LabeledSpan, TextBasedDocument
 
 
 @pytest.fixture

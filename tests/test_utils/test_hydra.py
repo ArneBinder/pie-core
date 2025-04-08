@@ -10,7 +10,7 @@ from pie_core.utils.hydra import (
     resolve_type,
     serialize_type,
 )
-from tests.common import (
+from tests.common.types import (
     TestDocument,
     TestDocumentWithEntities,
     TestDocumentWithSentences,
@@ -81,7 +81,9 @@ def test_resolve_optional_document_type():
     assert resolve_optional_document_type("pie_core.Document") == Document
 
     assert resolve_optional_document_type(TextBasedDocument) == TextBasedDocument
-    assert resolve_optional_document_type("tests.common.TextBasedDocument") == TextBasedDocument
+    assert (
+        resolve_optional_document_type("tests.common.types.TextBasedDocument") == TextBasedDocument
+    )
 
 
 def test_resolve_optional_document_type_none():
@@ -102,27 +104,27 @@ def test_resolve_optional_document_type_no_document():
     )
 
     with pytest.raises(TypeError) as excinfo:
-        resolve_optional_document_type("tests.utils.test_hydra.NoDocument")
+        resolve_optional_document_type("tests.test_utils.test_hydra.NoDocument")
     assert (
         str(excinfo.value)
         == "type must be a subclass of <class 'pie_core.document.Document'> or a string "
-        "that resolves to that, but got <class 'tests.utils.test_hydra.NoDocument'>"
+        "that resolves to that, but got <class 'tests.test_utils.test_hydra.NoDocument'>"
     )
 
 
 def test_serialize_type():
 
     serialized_dt = serialize_type(TestDocument)
-    assert serialized_dt == "tests.common.TestDocument"
+    assert serialized_dt == "tests.common.types.TestDocument"
     resolved_dt = resolve_optional_document_type(serialized_dt)
     assert resolved_dt == TestDocument
 
 
 def test_resolve_document_type():
     assert resolve_type(TestDocumentWithEntities) == TestDocumentWithEntities
-    assert resolve_type("tests.common.TestDocumentWithEntities") == TestDocumentWithEntities
+    assert resolve_type("tests.common.types.TestDocumentWithEntities") == TestDocumentWithEntities
     with pytest.raises(TypeError) as exc_info:
-        resolve_type("tests.utils.test_hydra.test_resolve_document_type")
+        resolve_type("tests.test_utils.test_hydra.test_resolve_document_type")
     assert str(exc_info.value).startswith(
         "type must be a subclass of None or a string that resolves to that, but got "
         "<function test_resolve_document_type"
