@@ -1,7 +1,6 @@
 import copy
 from collections.abc import Generator, Sequence
 from dataclasses import dataclass
-from typing import Any, Dict
 
 import pytest
 
