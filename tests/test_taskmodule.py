@@ -10,37 +10,9 @@ from tests.common.taskmodules import SimpleTransformerTextClassificationTaskModu
 from tests.common.types import Label
 
 
-def _config_to_str(cfg: Dict[str, Any]) -> str:
-    # Converts a configuration dictionary to a string representation
-    result = "-".join([f"{k}={cfg[k]}" for k in sorted(cfg)])
-    return result
-
-
-CONFIGS = [
-    {},
-]
-
-CONFIGS_DICT = {_config_to_str(cfg): cfg for cfg in CONFIGS}
-
-
-@pytest.fixture(scope="module", params=CONFIGS_DICT.keys())
-def config(request) -> Dict[str, Any]:
-    """
-    - Provides taskmodule configuration for testing.
-    - Yields config dictionaries from the CONFIGS list to produce clean test case identifiers.
-
-    """
-    return CONFIGS_DICT[request.param]
-
-
 @pytest.fixture(scope="module")
-def unprepared_taskmodule(config) -> SimpleTransformerTextClassificationTaskModule:
-    """
-    - Prepares a task module with the specified tokenizer and configuration.
-    - Sets up the task module with an unprepared state for testing purposes.
-
-    """
-    return SimpleTransformerTextClassificationTaskModule(**config)
+def unprepared_taskmodule() -> SimpleTransformerTextClassificationTaskModule:
+    return SimpleTransformerTextClassificationTaskModule()
 
 
 def test_taskmodule(unprepared_taskmodule) -> None:
@@ -93,10 +65,10 @@ def test_prepare(taskmodule) -> None:
         "taskmodule_type": "SimpleTransformerTextClassificationTaskModule",
         "labels": ["Negative", "Positive"],
     }
-    assert_post_prepare(taskmodule)
+    assert_is_post_prepared(taskmodule)
 
 
-def assert_post_prepare(taskmodule) -> None:
+def assert_is_post_prepared(taskmodule) -> None:
     assert taskmodule.label_to_id == {"Negative": 1, "O": 0, "Positive": 2}
     assert taskmodule.id_to_label == {0: "O", 1: "Negative", 2: "Positive"}
 
@@ -108,7 +80,7 @@ def test_from_config(taskmodule) -> None:
     assert type(taskmodule_from_config) is SimpleTransformerTextClassificationTaskModule
     assert taskmodule_from_config.is_prepared
     assert taskmodule_from_config.config == taskmodule.config
-    assert_post_prepare(taskmodule_from_config)
+    assert_is_post_prepared(taskmodule_from_config)
 
 
 @pytest.fixture(scope="module")
@@ -270,10 +242,11 @@ def test_decode(task_outputs, taskmodule, documents, inplace) -> None:
         # check if the documents are different
         for doc, doc_with_pred in zip(documents, docs_with_predictions):
             assert doc is not doc_with_pred
-    assert len(docs_with_predictions) == 2
-    # assert docs_with_predictions[0] == documents[0]
-    assert documents[0].label.resolve() == ["Positive"]
-    assert docs_with_predictions[0].label.predictions.resolve() == ["Negative"]
-    # assert docs_with_predictions[1] == documents[1]
-    assert documents[1].label.resolve() == ["Negative"]
-    assert docs_with_predictions[1].label.predictions.resolve() == ["O"]
+
+    # check annotations
+    labels_resolved = [doc.label.resolve() for doc in documents]
+    labels_predictions_resolved = [
+        doc_with_pred.label.predictions.resolve() for doc_with_pred in docs_with_predictions
+    ]
+    assert labels_resolved == [["Positive"], ["Negative"]]
+    assert labels_predictions_resolved == [["Negative"], ["O"]]
