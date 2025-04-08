@@ -6,6 +6,7 @@ workflow:
         -> task_output
     -> document
 """
+
 import dataclasses
 import logging
 from typing import (
@@ -24,14 +25,16 @@ import torch
 from transformers import AutoTokenizer
 from typing_extensions import TypeAlias
 
-from pie_core import TaskEncoding, TaskModule, AnnotationLayer, annotation_field
+from pie_core import AnnotationLayer, TaskEncoding, TaskModule, annotation_field
 from tests.common.types import Label, TextBasedDocument
 
 logger = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class TestDocumentWithLabel(TextBasedDocument):
     label: AnnotationLayer[Label] = annotation_field()
+
 
 class TaskOutput(TypedDict, total=False):
     label: str
@@ -102,7 +105,6 @@ class SimpleTransformerTextClassificationTaskModule(TaskModuleType):
             labels.add(label_annotation.label)
 
         self.labels = sorted(labels)
-
 
     def _post_prepare(self):
         """Any further preparation logic that requires the result of _prepare().
