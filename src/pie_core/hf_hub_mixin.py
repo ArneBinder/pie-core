@@ -507,3 +507,33 @@ class PieTaskModuleHFHubMixin(PieBaseHFHubMixin):
         taskmodule = cls.from_config(config=config or {}, **kwargs)
 
         return taskmodule
+
+
+TPipeline = TypeVar("TPipeline", bound="AnnotationPipelineHFHubMixin")
+
+
+class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
+    config_name = "pipeline_config.json"
+    config_type_key = "pipeline_type"
+
+    @classmethod
+    def _from_pretrained(
+        cls: Type[TPipeline],
+        *,
+        model_id: str,
+        revision: Optional[str],
+        cache_dir: Optional[Union[str, Path]],
+        force_download: bool,
+        proxies: Optional[Dict],
+        resume_download: bool,
+        local_files_only: bool,
+        token: Union[str, bool, None],
+        map_location: str = "cpu",
+        strict: bool = False,
+        config: Optional[dict] = None,
+        **kwargs,
+    ) -> TPipeline:
+
+        pipeline = cls.from_config(config=config or {}, **kwargs)
+
+        return pipeline
