@@ -26,8 +26,23 @@ class AnnotationPipeline(
             kwargs: Additional keyword arguments to pass to the parent class.
         """
         super().__init__(**kwargs)
-        self.model = model
-        self.taskmodule = taskmodule
+        self._model = model
+        self._taskmodule = taskmodule
+
+    @property
+    def model(self) -> Model:
+        """Get the model used by the pipeline."""
+        return self._model
+
+    @property
+    def taskmodule(self) -> TaskModule:
+        """Get the task module used by the pipeline."""
+        if self._taskmodule is not None:
+            return self._taskmodule
+        elif hasattr(self.model, "taskmodule"):
+            return self.model.taskmodule
+        else:
+            raise ValueError("No taskmodule found in the model. Please provide a taskmodule.")
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
