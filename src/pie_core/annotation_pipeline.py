@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Sequence, Type, Union, overload
+from typing import Any, Dict, Optional, Sequence, Union, overload
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
