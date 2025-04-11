@@ -1,3 +1,4 @@
+from pie_core.annotation_pipeline import AnnotationPipeline, AutoAnnotationPipeline
 from pie_core.auto import Auto
 from pie_core.document import Annotation, AnnotationLayer, Document, annotation_field
 from pie_core.metric import DocumentMetric
