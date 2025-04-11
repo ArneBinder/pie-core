@@ -112,15 +112,12 @@ class AnnotationPipeline(
             )
             # set is_from_pretrained to True
             remaining_taskmodule_kwargs["is_from_pretrained"] = True
-            # 2. If the taskmodule config is not None, create a taskmodule from it
-            if taskmodule_config is not None:
-                # the taskmodule_kwargs are already consumed, so we do not pass them again
+            # 2. If either the taskmodule config or the original taskmodule kwargs are not None,
+            #    create a taskmodule from the config and / or kwargs
+            if taskmodule_config is not None or taskmodule_or_taskmodule_kwargs is not None:
                 taskmodule = AutoTaskModule.from_config(
-                    config=taskmodule_config, **remaining_taskmodule_kwargs
+                    config=taskmodule_config or {}, **remaining_taskmodule_kwargs
                 )
-            # 3. If the taskmodule config is None, create a taskmodule from the kwargs
-            elif taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule = AutoTaskModule.from_config(config={}, **remaining_taskmodule_kwargs)
             # 4. If the taskmodule is still None, do not create a taskmodule.
             #    It is assumed that the model contains the taskmodule.
             else:
