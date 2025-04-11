@@ -34,6 +34,10 @@ class AnnotationPipeline(
         """Get the model used by the pipeline."""
         return self._model
 
+    @model.setter
+    def model(self, model: Model) -> None:
+        self._model = model
+
     @property
     def taskmodule(self) -> TaskModule:
         """Get the task module used by the pipeline."""
@@ -43,6 +47,10 @@ class AnnotationPipeline(
             return self.model.taskmodule
         else:
             raise ValueError("No taskmodule found in the model. Please provide a taskmodule.")
+
+    @taskmodule.setter
+    def taskmodule(self, taskmodule: Optional[TaskModule]) -> None:
+        self._taskmodule = taskmodule
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
