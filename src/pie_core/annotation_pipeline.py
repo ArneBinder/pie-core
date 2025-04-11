@@ -98,8 +98,6 @@ class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeli
         use_auth_token: Optional[str] = None,
         cache_dir: Optional[str] = None,
         local_files_only: bool = False,
-        device: int = -1,
-        binary_output: bool = False,
         **kwargs,
     ) -> "AnnotationPipeline":
         taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule", None)
@@ -167,8 +165,6 @@ class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeli
             use_auth_token=use_auth_token,
             cache_dir=cache_dir,
             local_files_only=local_files_only,
-            device=device,
-            binary_output=binary_output,
             **kwargs,
         )
 
