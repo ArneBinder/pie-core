@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overload
+from typing import Any, Dict, Optional, Sequence, TypeVar, Union, overload
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
@@ -20,43 +20,7 @@ class AnnotationPipeline(
     AnnotationPipelineHFHubMixin,
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
-    Generic[TModel, TTaskModule],
 ):
-    def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
-        """Initialize the AnnotationPipeline.
-
-        The taskmodule is optional, it may be embedded in the model.
-        Args:
-            model: The model to use for the pipeline.
-            taskmodule: The task module to use for the pipeline.
-            kwargs: Additional keyword arguments to pass to the parent class.
-        """
-        super().__init__(**kwargs)
-        self._model = model
-        self._taskmodule = taskmodule
-
-    @property
-    def model(self) -> TModel:
-        """Get the model used by the pipeline."""
-        return self._model
-
-    @model.setter
-    def model(self, model: TModel) -> None:
-        self._model = model
-
-    @property
-    def taskmodule(self) -> TTaskModule:
-        """Get the task module used by the pipeline."""
-        if self._taskmodule is not None:
-            return self._taskmodule
-        elif hasattr(self.model, "taskmodule"):
-            return self.model.taskmodule
-        else:
-            raise ValueError("No taskmodule found in the model. Please provide a taskmodule.")
-
-    @taskmodule.setter
-    def taskmodule(self, taskmodule: Optional[TTaskModule]) -> None:
-        self._taskmodule = taskmodule
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -163,8 +127,9 @@ class AnnotationPipeline(
             else:
                 taskmodule = None
 
-        kwargs["taskmodule"] = taskmodule
         kwargs["model"] = model
+        if taskmodule is not None:
+            kwargs["taskmodule"] = taskmodule
 
         pipeline = super().from_pretrained(
             pretrained_model_name_or_path=pretrained_model_name_or_path,
@@ -180,6 +145,6 @@ class AnnotationPipeline(
         return pipeline
 
 
-class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
+class AutoAnnotationPipeline(AnnotationPipeline, Auto[AnnotationPipeline]):
 
     BASE_CLASS = AnnotationPipeline
