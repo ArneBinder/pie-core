@@ -20,9 +20,9 @@ class Registrable(Generic[T2]):
         """Returns the base class of this registrable class."""
         if cls.BASE_CLASS is None:
             raise RegistrationError(
-                f"{cls.__class__.__name__} has no base class. "
-                f"Please call {cls.__class__.__name__}.register() to register it or "
-                "manually set BASE_CLASS to a subclass of Registrable."
+                f"{cls.__name__} has no defined base class. "
+                f"Please annotate {cls.__name__} with @<SOME-PARENT-OF-{cls.__name__}>.register() "
+                f"to register it at <SOME-PARENT-OF-{cls.__name__}>."
             )
         return cls.BASE_CLASS
 
