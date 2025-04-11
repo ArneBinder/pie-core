@@ -517,6 +517,9 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
     config_name = "pipeline_config.json"
     config_type_key = "pipeline_type"
 
+    def _save_pretrained(self, save_directory) -> None:
+        return None
+
     @classmethod
     def _from_pretrained(
         cls: Type[TPipeline],
