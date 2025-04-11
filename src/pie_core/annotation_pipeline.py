@@ -1,6 +1,7 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Sequence, TypeVar, Union, overload
+from pathlib import Path
+from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overload
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
@@ -12,14 +13,76 @@ from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
 
+TModel = TypeVar("TModel", bound="Model")
+TTaskModule = TypeVar("TTaskModule", bound="TaskModule")
+
 
 class AnnotationPipeline(
     AnnotationPipelineHFHubMixin,
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
+    Generic[TModel, TTaskModule],
 ):
     auto_model_class = AutoModel
     auto_taskmodule_class = AutoTaskModule
+
+    def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
+        super().__init__(**kwargs)
+        self._model = model
+        self._taskmodule = taskmodule
+
+    @property
+    def model(self) -> TModel:
+        """The model used in the pipeline."""
+        return self._model
+
+    @model.setter
+    def model(self, model: TModel) -> None:
+        """Set the model used in the pipeline."""
+        self._model = model
+
+    @property
+    def taskmodule(self) -> TTaskModule:
+        """The taskmodule used in the pipeline."""
+        if self._taskmodule is not None:
+            return self._taskmodule
+        # if the taskmodule is None, try to retrieve it from the model
+        if hasattr(self.model, "taskmodule"):
+            return self.model.taskmodule
+        raise ValueError("The taskmodule is None and the model does not contain a taskmodule.")
+
+    @taskmodule.setter
+    def taskmodule(self, taskmodule: Optional[TTaskModule]) -> None:
+        """Set the taskmodule used in the pipeline."""
+        self._taskmodule = taskmodule
+
+    def save_pretrained(
+        self,
+        save_directory: Union[str, Path],
+        *,
+        repo_id: Optional[str] = None,
+        push_to_hub: bool = False,
+        **kwargs,
+    ) -> Optional[str]:
+        """Save the model, taskmodule and pipeline config to a local directory or the Huggingface
+        Hub."""
+
+        all_kwargs = kwargs.copy()
+        all_kwargs["repo_id"] = repo_id
+        all_kwargs["push_to_hub"] = push_to_hub
+        all_kwargs["save_directory"] = save_directory
+
+        # save model
+        self._model.save_pretrained(**all_kwargs)
+
+        # save taskmodule, if it exists
+        if self._taskmodule is not None:
+            self._taskmodule.save_pretrained(**all_kwargs)
+
+        # save pipeline config and maybe upload to hub
+        super().save_pretrained(**all_kwargs)
+
+        return None
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
