@@ -18,8 +18,8 @@ class AnnotationPipeline(
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
 ):
-    MODEL_BASE_CLASS = AutoModel
-    TASKMODULE_BASE_CLASS = AutoTaskModule
+    auto_model_class = AutoModel
+    auto_taskmodule_class = AutoTaskModule
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -86,7 +86,7 @@ class AnnotationPipeline(
             model = model_or_model_kwargs
         else:
             # otherwise, create a new Model instance via AutoModel
-            model = cls.MODEL_BASE_CLASS.from_pretrained(
+            model = cls.auto_model_class.from_pretrained(
                 pretrained_model_name_or_path=pretrained_model_name_or_path,
                 force_download=force_download,
                 resume_download=resume_download,
@@ -104,7 +104,7 @@ class AnnotationPipeline(
             # otherwise:
             # 1. try to retrieve the taskmodule config
             taskmodule_config, remaining_taskmodule_kwargs = (
-                cls.TASKMODULE_BASE_CLASS.retrieve_config(
+                cls.auto_taskmodule_class.retrieve_config(
                     model_id=pretrained_model_name_or_path,
                     force_download=force_download,
                     resume_download=resume_download,
@@ -119,7 +119,7 @@ class AnnotationPipeline(
             # 2. If either the taskmodule config or the original taskmodule kwargs are not None,
             #    create a taskmodule from the config and / or kwargs
             if taskmodule_config is not None or taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule = cls.TASKMODULE_BASE_CLASS.from_config(
+                taskmodule = cls.auto_taskmodule_class.from_config(
                     config=taskmodule_config or {}, **remaining_taskmodule_kwargs
                 )
             # 4. If the taskmodule is still None, do not create a taskmodule.
