@@ -12,9 +12,6 @@ from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
 
-TModel = TypeVar("TModel", bound=Model)
-TTaskModule = TypeVar("TTaskModule", bound=TaskModule)
-
 
 class AnnotationPipeline(
     AnnotationPipelineHFHubMixin,
