@@ -27,6 +27,11 @@ class Registrable(Generic[T2]):
         return cls.BASE_CLASS
 
     @classmethod
+    def has_base_class(cls) -> bool:
+        """Returns True if this registrable class has a base class."""
+        return cls.BASE_CLASS is not None
+
+    @classmethod
     def register(
         cls: Type[T],
         name: Optional[str] = None,
