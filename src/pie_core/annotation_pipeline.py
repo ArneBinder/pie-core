@@ -1,5 +1,5 @@
 import logging
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overload
 
@@ -23,6 +23,7 @@ class AnnotationPipeline(
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
     Generic[TModel, TTaskModule],
+    ABC,
 ):
     auto_model_class = AutoModel
     auto_taskmodule_class = AutoTaskModule
