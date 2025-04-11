@@ -18,6 +18,8 @@ class AnnotationPipeline(
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
 ):
+    MODEL_BASE_CLASS = AutoModel
+    TASKMODULE_BASE_CLASS = AutoTaskModule
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -84,7 +86,7 @@ class AnnotationPipeline(
             model = model_or_model_kwargs
         else:
             # otherwise, create a new Model instance via AutoModel
-            model = AutoModel.from_pretrained(
+            model = cls.MODEL_BASE_CLASS.from_pretrained(
                 pretrained_model_name_or_path=pretrained_model_name_or_path,
                 force_download=force_download,
                 resume_download=resume_download,
@@ -101,21 +103,23 @@ class AnnotationPipeline(
         else:
             # otherwise:
             # 1. try to retrieve the taskmodule config
-            taskmodule_config, remaining_taskmodule_kwargs = AutoTaskModule.retrieve_config(
-                model_id=pretrained_model_name_or_path,
-                force_download=force_download,
-                resume_download=resume_download,
-                proxies=proxies,
-                cache_dir=cache_dir,
-                local_files_only=local_files_only,
-                **(taskmodule_or_taskmodule_kwargs or {}),
+            taskmodule_config, remaining_taskmodule_kwargs = (
+                cls.TASKMODULE_BASE_CLASS.retrieve_config(
+                    model_id=pretrained_model_name_or_path,
+                    force_download=force_download,
+                    resume_download=resume_download,
+                    proxies=proxies,
+                    cache_dir=cache_dir,
+                    local_files_only=local_files_only,
+                    **(taskmodule_or_taskmodule_kwargs or {}),
+                )
             )
             # set is_from_pretrained to True
             remaining_taskmodule_kwargs["is_from_pretrained"] = True
             # 2. If either the taskmodule config or the original taskmodule kwargs are not None,
             #    create a taskmodule from the config and / or kwargs
             if taskmodule_config is not None or taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule = AutoTaskModule.from_config(
+                taskmodule = cls.TASKMODULE_BASE_CLASS.from_config(
                     config=taskmodule_config or {}, **remaining_taskmodule_kwargs
                 )
             # 4. If the taskmodule is still None, do not create a taskmodule.
