@@ -102,11 +102,11 @@ class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeli
         binary_output: bool = False,
         **kwargs,
     ) -> "AnnotationPipeline":
-        taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule")
+        taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule", None)
         if "taskmodule_kwargs" in kwargs:
             logger.warning("taskmodule_kwargs is deprecated. Use taskmodule instead.")
             taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule_kwargs")
-        model_or_model_kwargs = kwargs.pop("model")
+        model_or_model_kwargs = kwargs.pop("model", None)
         if "model_kwargs" in kwargs:
             logger.warning("model_kwargs is deprecated. Use model instead.")
             model_or_model_kwargs = kwargs.pop("model_kwargs")
