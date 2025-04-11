@@ -29,6 +29,7 @@ class AnnotationPipeline(
 
     def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
         super().__init__(**kwargs)
+        self.save_hyperparameters(ignore=["model", "taskmodule"])
         self._model = model
         self._taskmodule = taskmodule
 
