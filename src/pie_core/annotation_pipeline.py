@@ -5,11 +5,12 @@ from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overl
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
-from pie_core import AutoModel, AutoTaskModule, Model, TaskModule
 from pie_core.auto import Auto
 from pie_core.document import Document
 from pie_core.hf_hub_mixin import AnnotationPipelineHFHubMixin
+from pie_core.model import AutoModel, Model
 from pie_core.registrable import Registrable
+from pie_core.taskmodule import AutoTaskModule, TaskModule
 
 logger = logging.getLogger(__name__)
 
