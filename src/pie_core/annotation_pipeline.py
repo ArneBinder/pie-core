@@ -97,11 +97,6 @@ class AnnotationPipeline(
         **kwargs,
     ) -> Union[Document, Sequence[Document]]: ...
 
-
-class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
-
-    BASE_CLASS = AnnotationPipeline
-
     @classmethod
     def from_pretrained(
         cls,
@@ -183,3 +178,8 @@ class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeli
         )
 
         return pipeline
+
+
+class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
+
+    BASE_CLASS = AnnotationPipeline
