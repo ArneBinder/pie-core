@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Sequence, Union, overload
+from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overload
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
@@ -12,11 +12,17 @@ from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
 
+TModel = TypeVar("TModel", bound=Model)
+TTaskModule = TypeVar("TTaskModule", bound=TaskModule)
+
 
 class AnnotationPipeline(
-    AnnotationPipelineHFHubMixin, HyperparametersMixin, Registrable["AnnotationPipeline"]
+    AnnotationPipelineHFHubMixin,
+    HyperparametersMixin,
+    Registrable["AnnotationPipeline"],
+    Generic[TModel, TTaskModule],
 ):
-    def __init__(self, model: Model, taskmodule: Optional[TaskModule] = None, **kwargs):
+    def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
         """Initialize the AnnotationPipeline.
 
         The taskmodule is optional, it may be embedded in the model.
@@ -30,16 +36,16 @@ class AnnotationPipeline(
         self._taskmodule = taskmodule
 
     @property
-    def model(self) -> Model:
+    def model(self) -> TModel:
         """Get the model used by the pipeline."""
         return self._model
 
     @model.setter
-    def model(self, model: Model) -> None:
+    def model(self, model: TModel) -> None:
         self._model = model
 
     @property
-    def taskmodule(self) -> TaskModule:
+    def taskmodule(self) -> TTaskModule:
         """Get the task module used by the pipeline."""
         if self._taskmodule is not None:
             return self._taskmodule
@@ -49,7 +55,7 @@ class AnnotationPipeline(
             raise ValueError("No taskmodule found in the model. Please provide a taskmodule.")
 
     @taskmodule.setter
-    def taskmodule(self, taskmodule: Optional[TaskModule]) -> None:
+    def taskmodule(self, taskmodule: Optional[TTaskModule]) -> None:
         self._taskmodule = taskmodule
 
     def _config(self) -> Dict[str, Any]:
