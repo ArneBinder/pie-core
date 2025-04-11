@@ -88,7 +88,17 @@ class AnnotationPipeline(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        config[self.config_type_key] = self.base_class().name_for_object_class(self)
+        if self.has_base_class():
+            config[self.config_type_key] = self.base_class().name_for_object_class(self)
+        else:
+            logger.warning(
+                f"{self.__class__.__name__} does not have a base class. It will not work"
+                " with AutoAnnotationPipeline.from_pretrained() or"
+                " AutoAnnotationPipeline.from_config(). Consider to annotate the class with"
+                " @AnnotationPipeline.register() or @AnnotationPipeline.register(name='...')"
+                " to register it as an AnnotationPipeline which will allow to load it via"
+                " AutoAnnotationPipeline."
+            )
         # add all hparams
         config.update(self.hparams)
         return config
