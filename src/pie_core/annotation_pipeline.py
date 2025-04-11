@@ -93,11 +93,6 @@ class AnnotationPipeline(
         config.update(self.hparams)
         return config
 
-    def _save_pretrained(self, save_directory) -> None:
-        raise NotImplementedError(
-            "AnnotationPipeline does not yet support saving to file or the Huggingface Hub."
-        )
-
     @overload
     def __call__(
         self,
