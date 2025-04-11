@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import requests
 from huggingface_hub.constants import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
@@ -115,7 +115,8 @@ class PieBaseHFHubMixin:
         local_files_only: bool = False,
         revision: Optional[str] = None,
         fail_silently: bool = False,
-    ) -> Optional[Dict[str, Any]]:
+        **kwargs,
+    ) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
         """Retrieve the configuration file from the Huggingface Hub or local directory.
 
         Returns None if the config file is not found.
@@ -147,8 +148,8 @@ class PieBaseHFHubMixin:
         if config_file is not None:
             with open(config_file, encoding="utf-8") as f:
                 config = json.load(f)
-            return config
-        return None
+            return config, kwargs
+        return None, kwargs
 
     @classmethod
     @validate_hf_hub_args
@@ -195,7 +196,7 @@ class PieBaseHFHubMixin:
         """
         model_id = pretrained_model_name_or_path
 
-        config = cls.retrieve_config(
+        config, _ = cls.retrieve_config(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,

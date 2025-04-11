@@ -101,7 +101,7 @@ class AnnotationPipeline(
         else:
             # otherwise:
             # 1. try to retrieve the taskmodule config
-            taskmodule_config = AutoTaskModule.retrieve_config(
+            taskmodule_config, remaining_taskmodule_kwargs = AutoTaskModule.retrieve_config(
                 model_id=pretrained_model_name_or_path,
                 force_download=force_download,
                 resume_download=resume_download,
@@ -110,17 +110,17 @@ class AnnotationPipeline(
                 local_files_only=local_files_only,
                 **(taskmodule_or_taskmodule_kwargs or {}),
             )
+            # set is_from_pretrained to True
+            remaining_taskmodule_kwargs["is_from_pretrained"] = True
             # 2. If the taskmodule config is not None, create a taskmodule from it
             if taskmodule_config is not None:
                 # the taskmodule_kwargs are already consumed, so we do not pass them again
                 taskmodule = AutoTaskModule.from_config(
-                    config=taskmodule_config, is_from_pretrained=True
+                    config=taskmodule_config, **remaining_taskmodule_kwargs
                 )
             # 3. If the taskmodule config is None, create a taskmodule from the kwargs
             elif taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule_kwargs = taskmodule_or_taskmodule_kwargs.copy()
-                taskmodule_kwargs["is_from_pretrained"] = True
-                taskmodule = AutoTaskModule.from_config(config={}, **taskmodule_kwargs)
+                taskmodule = AutoTaskModule.from_config(config={}, **remaining_taskmodule_kwargs)
             # 4. If the taskmodule is still None, do not create a taskmodule.
             #    It is assumed that the model contains the taskmodule.
             else:
