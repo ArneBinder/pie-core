@@ -13,14 +13,14 @@ from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
 
-TModel = TypeVar("TModel", bound="PieModelHFHubMixin")
+TModelHFHubMixin = TypeVar("TModelHFHubMixin", bound="ModelHFHubMixin")
 
 
-class PieModelHFHubMixin(PieBaseHFHubMixin):
+class ModelHFHubMixin(PieBaseHFHubMixin):
     config_name = CONFIG_NAME
     config_type_key = "model_type"
     weights_file_name = PYTORCH_WEIGHTS_NAME
-    """Implementation of [`PieBaseHFHubMixin`] to provide model Hub upload/download capabilities to
+    """Implementation of [`ModelHFHubMixin`] to provide model Hub upload/download capabilities to
     models.
 
     Example for a Pytorch model:
@@ -108,7 +108,7 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
 
     @classmethod
     def _from_pretrained(
-        cls: Type[TModel],
+        cls: Type[TModelHFHubMixin],
         *,
         model_id: str,
         revision: Optional[str],
@@ -122,7 +122,7 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
         strict: bool = False,
         config: Optional[dict] = None,
         **kwargs,
-    ) -> TModel:
+    ) -> TModelHFHubMixin:
 
         model_file, remaining_kwargs = cls.retrieve_model_file(
             model_id=model_id,
@@ -144,7 +144,7 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
         return model
 
 
-class Model(PieModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
+class Model(ModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -163,6 +163,6 @@ class Model(PieModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
         return config
 
 
-class AutoModel(PieModelHFHubMixin, Auto[Model]):
+class AutoModel(ModelHFHubMixin, Auto[Model]):
 
     BASE_CLASS = Model

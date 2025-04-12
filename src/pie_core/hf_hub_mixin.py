@@ -96,7 +96,7 @@ class PieBaseHFHubMixin:
             save_directory (`str` or `Path`):
                 Path to directory in which the model weights and configuration will be saved.
         """
-        return None
+        raise NotImplementedError
 
     @classmethod
     def retrieve_config_file(
@@ -232,8 +232,7 @@ class PieBaseHFHubMixin:
         resume_download: bool,
         local_files_only: bool,
         token: Optional[Union[str, bool]],
-        config: Optional[dict] = None,
-        **kwargs,
+        **model_kwargs,
     ) -> T:
         """Overwrite this method in subclass to define how to load your model from pretrained.
 
@@ -268,9 +267,7 @@ class PieBaseHFHubMixin:
             model_kwargs:
                 Additional keyword arguments passed along to the [`~ModelHubMixin._from_pretrained`] method.
         """
-        module = cls.from_config(config=config or {}, **kwargs)
-
-        return module
+        raise NotImplementedError
 
     @validate_hf_hub_args
     def push_to_hub(

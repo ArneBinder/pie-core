@@ -36,18 +36,27 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
     auto_model_class = AutoModel
     auto_taskmodule_class = AutoTaskModule
 
+    def _save_pretrained(self, save_directory) -> None:
+        return None
+
     @classmethod
-    def from_pretrained(
+    def _from_pretrained(
         cls: Type[TAnnotationPipelineHFHubMixin],
-        pretrained_model_name_or_path: str,
-        force_download: bool = False,
-        resume_download: bool = False,
-        proxies: Optional[Dict] = None,
-        use_auth_token: Optional[str] = None,
-        cache_dir: Optional[str] = None,
-        local_files_only: bool = False,
+        *,
+        model_id: str,
+        revision: Optional[str],
+        cache_dir: Optional[Union[str, Path]],
+        force_download: bool,
+        proxies: Optional[Dict],
+        resume_download: bool,
+        local_files_only: bool,
+        token: Union[str, bool, None],
+        map_location: str = "cpu",
+        strict: bool = False,
+        config: Optional[dict] = None,
         **kwargs,
     ) -> TAnnotationPipelineHFHubMixin:
+
         taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule", None)
         if "taskmodule_kwargs" in kwargs:
             logger.warning("taskmodule_kwargs is deprecated. Use taskmodule instead.")
@@ -63,11 +72,10 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
         else:
             # otherwise, create a new Model instance via AutoModel
             model = cls.auto_model_class.from_pretrained(
-                pretrained_model_name_or_path=pretrained_model_name_or_path,
+                pretrained_model_name_or_path=model_id,
                 force_download=force_download,
                 resume_download=resume_download,
                 proxies=proxies,
-                use_auth_token=use_auth_token,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
                 **(model_or_model_kwargs or {}),
@@ -80,7 +88,7 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
             # otherwise:
             # 1. try to retrieve the taskmodule config file
             taskmodule_config_file, _ = cls.auto_taskmodule_class.retrieve_config_file(
-                model_id=pretrained_model_name_or_path,
+                model_id=model_id,
                 force_download=force_download,
                 resume_download=resume_download,
                 proxies=proxies,
@@ -91,11 +99,10 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
             # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
             if taskmodule_config_file is not None:
                 taskmodule = cls.auto_taskmodule_class.from_pretrained(
-                    pretrained_model_name_or_path=pretrained_model_name_or_path,
+                    pretrained_model_name_or_path=model_id,
                     force_download=force_download,
                     resume_download=resume_download,
                     proxies=proxies,
-                    use_auth_token=use_auth_token,
                     cache_dir=cache_dir,
                     local_files_only=local_files_only,
                     **(taskmodule_or_taskmodule_kwargs or {}),
@@ -109,16 +116,7 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
         if taskmodule is not None:
             kwargs["taskmodule"] = taskmodule
 
-        pipeline = super().from_pretrained(
-            pretrained_model_name_or_path=pretrained_model_name_or_path,
-            force_download=force_download,
-            resume_download=resume_download,
-            proxies=proxies,
-            use_auth_token=use_auth_token,
-            cache_dir=cache_dir,
-            local_files_only=local_files_only,
-            **kwargs,
-        )
+        pipeline = cls.from_config(config=config or {}, **kwargs)
 
         return pipeline
 
