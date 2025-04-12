@@ -173,27 +173,29 @@ class AnnotationPipeline(
             taskmodule = taskmodule_or_taskmodule_kwargs
         else:
             # otherwise:
-            # 1. try to retrieve the taskmodule config
-            taskmodule_config, remaining_taskmodule_kwargs = (
-                cls.auto_taskmodule_class.retrieve_config(
-                    model_id=pretrained_model_name_or_path,
+            # 1. try to retrieve the taskmodule config file
+            taskmodule_config_file, _ = cls.auto_taskmodule_class.retrieve_config_file(
+                model_id=pretrained_model_name_or_path,
+                force_download=force_download,
+                resume_download=resume_download,
+                proxies=proxies,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                **(taskmodule_or_taskmodule_kwargs or {}),
+            )
+            # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
+            if taskmodule_config_file is not None:
+                taskmodule = cls.auto_taskmodule_class.from_pretrained(
+                    pretrained_model_name_or_path=pretrained_model_name_or_path,
                     force_download=force_download,
                     resume_download=resume_download,
                     proxies=proxies,
+                    use_auth_token=use_auth_token,
                     cache_dir=cache_dir,
                     local_files_only=local_files_only,
                     **(taskmodule_or_taskmodule_kwargs or {}),
                 )
-            )
-            # set is_from_pretrained to True
-            remaining_taskmodule_kwargs["is_from_pretrained"] = True
-            # 2. If either the taskmodule config or the original taskmodule kwargs are not None,
-            #    create a taskmodule from the config and / or kwargs
-            if taskmodule_config is not None or taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule = cls.auto_taskmodule_class.from_config(
-                    config=taskmodule_config or {}, **remaining_taskmodule_kwargs
-                )
-            # 4. If the taskmodule is still None, do not create a taskmodule.
+            # 3. Otherwise, do not load a taskmodule.
             #    It is assumed that the model contains the taskmodule.
             else:
                 taskmodule = None

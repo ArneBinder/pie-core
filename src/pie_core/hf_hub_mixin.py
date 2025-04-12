@@ -104,7 +104,7 @@ class PieBaseHFHubMixin:
         raise NotImplementedError
 
     @classmethod
-    def retrieve_config(
+    def retrieve_config_file(
         cls,
         model_id: Union[str, Path],
         force_download: bool = False,
@@ -115,8 +115,8 @@ class PieBaseHFHubMixin:
         local_files_only: bool = False,
         revision: Optional[str] = None,
         fail_silently: bool = False,
-        **kwargs,
-    ) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        **remaining_kwargs,
+    ) -> Tuple[Optional[str], Dict[str, Any]]:
         """Retrieve the configuration file from the Huggingface Hub or local directory.
 
         Returns None if the config file is not found.
@@ -145,11 +145,7 @@ class PieBaseHFHubMixin:
                 if not fail_silently:
                     logger.warning(f"{cls.config_name} not found in HuggingFace Hub.")
 
-        if config_file is not None:
-            with open(config_file, encoding="utf-8") as f:
-                config = json.load(f)
-            return config, kwargs
-        return None, kwargs
+        return config_file, remaining_kwargs
 
     @classmethod
     @validate_hf_hub_args
@@ -196,7 +192,7 @@ class PieBaseHFHubMixin:
         """
         model_id = pretrained_model_name_or_path
 
-        config, _ = cls.retrieve_config(
+        config_file, _ = cls.retrieve_config_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
@@ -205,9 +201,12 @@ class PieBaseHFHubMixin:
             resume_download=resume_download,
             local_files_only=local_files_only,
             token=token,
+            fail_silently=False,
         )
 
-        if config is not None:
+        if config_file is not None:
+            with open(config_file, encoding="utf-8") as f:
+                config = json.load(f)
             model_kwargs.update({"config": config})
 
         # The value of is_from_pretrained is set to True when the model is loaded from pretrained.
@@ -385,20 +384,18 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
     config_name = MODEL_CONFIG_NAME
     config_type_key = MODEL_CONFIG_TYPE_KEY
     weights_file_name = PYTORCH_WEIGHTS_NAME
-    """Implementation of [`ModelHubMixin`] to provide model Hub upload/download capabilities to
-    PyTorch models. The model is set in evaluation mode by default using `model.eval()` (dropout
-    modules are deactivated). To train the model, you should first set it back in training mode
-    with `model.train()`.
+    """Implementation of [`PieBaseHFHubMixin`] to provide model Hub upload/download capabilities to
+    models.
 
-    Example:
+    Example for a Pytorch model:
 
     ```python
     >>> import torch
     >>> import torch.nn as nn
-    >>> from huggingface_hub import PyTorchModelHubMixin
+    >>> from pie_core import PieModelHFHubMixin
 
 
-    >>> class MyModel(nn.Module, PyTorchModelHubMixin):
+    >>> class MyPytorchModel(nn.Module, PieModelHFHubMixin):
     ...     def __init__(self):
     ...         super().__init__()
     ...         self.param = nn.Parameter(torch.rand(3, 4))
@@ -406,6 +403,16 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
 
     ...     def forward(self, x):
     ...         return self.linear(x + self.param)
+    ...
+    ...     def save_model_file(self, model_file: str) -> None:
+    ...         torch.save(self.state_dict(), model_file)
+    ...
+    ...     def load_model_file(
+    ...         self, model_file: str, map_location: str = "cpu", strict: bool = False
+    ...     ) -> None:
+    ...         state_dict = torch.load(model_file, map_location=torch.device(map_location))
+    ...         self.load_state_dict(state_dict, strict=strict)
+
     >>> model = MyModel()
 
     # Save model weights to local directory
@@ -434,6 +441,38 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
         self.save_model_file(str(save_directory / self.weights_file_name))
 
     @classmethod
+    def retrieve_model_file(
+        cls,
+        model_id: str,
+        revision: Optional[str] = None,
+        cache_dir: Optional[Union[str, Path]] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        resume_download: bool = False,
+        local_files_only: bool = False,
+        token: Optional[Union[str, bool]] = None,
+        **remaining_kwargs,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Retrieve the model file from the Huggingface Hub or local directory."""
+        if os.path.isdir(model_id):
+            logger.info("Loading weights from local directory")
+            model_file = os.path.join(model_id, cls.weights_file_name)
+        else:
+            model_file = hf_hub_download(
+                repo_id=model_id,
+                filename=cls.weights_file_name,
+                revision=revision,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                proxies=proxies,
+                resume_download=resume_download,
+                token=token,
+                local_files_only=local_files_only,
+            )
+
+        return model_file, remaining_kwargs
+
+    @classmethod
     def _from_pretrained(
         cls: Type[TModel],
         *,
@@ -451,24 +490,21 @@ class PieModelHFHubMixin(PieBaseHFHubMixin):
         **kwargs,
     ) -> TModel:
 
-        model = cls.from_config(config=config or {}, **kwargs)
-        """Load Pytorch pretrained weights and return the loaded model."""
-        if os.path.isdir(model_id):
-            logger.info("Loading weights from local directory")
-            model_file = os.path.join(model_id, model.weights_file_name)
-        else:
-            model_file = hf_hub_download(
-                repo_id=model_id,
-                filename=model.weights_file_name,
-                revision=revision,
-                cache_dir=cache_dir,
-                force_download=force_download,
-                proxies=proxies,
-                resume_download=resume_download,
-                token=token,
-                local_files_only=local_files_only,
-            )
+        model_file, remaining_kwargs = cls.retrieve_model_file(
+            model_id=model_id,
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            proxies=proxies,
+            resume_download=resume_download,
+            local_files_only=local_files_only,
+            token=token,
+            **kwargs,
+        )
+        model = cls.from_config(config=config or {}, **remaining_kwargs)
 
+        # TODO: map_location and strict are quite specific to PyTorch.
+        #  How to handle this in a more generic way?
         model.load_model_file(model_file, map_location=map_location, strict=strict)
 
         return model
