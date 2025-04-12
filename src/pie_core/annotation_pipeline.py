@@ -1,18 +1,123 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Generic, Optional, Sequence, TypeVar, Union, overload
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from pytorch_lightning.core.mixins import HyperparametersMixin
 
 from pie_core.auto import Auto
 from pie_core.document import Document
-from pie_core.hf_hub_mixin import AnnotationPipelineHFHubMixin
+from pie_core.hf_hub_mixin import PieBaseHFHubMixin
 from pie_core.model import AutoModel, Model
 from pie_core.registrable import Registrable
 from pie_core.taskmodule import AutoTaskModule, TaskModule
 
 logger = logging.getLogger(__name__)
+
+
+TAnnotationPipelineHFHubMixin = TypeVar(
+    "TAnnotationPipelineHFHubMixin", bound="AnnotationPipelineHFHubMixin"
+)
+
+
+class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
+    config_name = "pipeline_config.json"
+    config_type_key = "pipeline_type"
+    auto_model_class = AutoModel
+    auto_taskmodule_class = AutoTaskModule
+
+    def _save_pretrained(self, save_directory) -> None:
+        return None
+
+    @classmethod
+    def _from_pretrained(
+        cls: Type[TAnnotationPipelineHFHubMixin],
+        *,
+        model_id: str,
+        revision: Optional[str],
+        cache_dir: Optional[Union[str, Path]],
+        force_download: bool,
+        proxies: Optional[Dict],
+        resume_download: bool,
+        local_files_only: bool,
+        token: Union[str, bool, None],
+        config: Optional[dict] = None,
+        **kwargs,
+    ) -> TAnnotationPipelineHFHubMixin:
+
+        taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule", None)
+        if "taskmodule_kwargs" in kwargs:
+            logger.warning("taskmodule_kwargs is deprecated. Use taskmodule instead.")
+            taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule_kwargs")
+        model_or_model_kwargs = kwargs.pop("model", None)
+        if "model_kwargs" in kwargs:
+            logger.warning("model_kwargs is deprecated. Use model instead.")
+            model_or_model_kwargs = kwargs.pop("model_kwargs")
+
+        if isinstance(model_or_model_kwargs, Model):
+            # if model is already a Model instance, use it directly
+            model = model_or_model_kwargs
+        else:
+            # otherwise, create a new Model instance via AutoModel
+            model = cls.auto_model_class.from_pretrained(
+                pretrained_model_name_or_path=model_id,
+                force_download=force_download,
+                resume_download=resume_download,
+                proxies=proxies,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                **(model_or_model_kwargs or {}),
+            )
+
+        if isinstance(taskmodule_or_taskmodule_kwargs, TaskModule):
+            # if taskmodule is already a TaskModule instance, use it directly
+            taskmodule = taskmodule_or_taskmodule_kwargs
+        else:
+            # otherwise:
+            # 1. try to retrieve the taskmodule config file
+            taskmodule_config_file, _ = cls.auto_taskmodule_class.retrieve_config_file(
+                model_id=model_id,
+                force_download=force_download,
+                resume_download=resume_download,
+                proxies=proxies,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                **(taskmodule_or_taskmodule_kwargs or {}),
+            )
+            # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
+            if taskmodule_config_file is not None:
+                taskmodule = cls.auto_taskmodule_class.from_pretrained(
+                    pretrained_model_name_or_path=model_id,
+                    force_download=force_download,
+                    resume_download=resume_download,
+                    proxies=proxies,
+                    cache_dir=cache_dir,
+                    local_files_only=local_files_only,
+                    **(taskmodule_or_taskmodule_kwargs or {}),
+                )
+            # 3. Otherwise, do not load a taskmodule.
+            #    It is assumed that the model contains the taskmodule.
+            else:
+                taskmodule = None
+
+        kwargs["model"] = model
+        if taskmodule is not None:
+            kwargs["taskmodule"] = taskmodule
+
+        pipeline = cls.from_config(config=config or {}, **kwargs)
+
+        return pipeline
+
 
 TModel = TypeVar("TModel", bound="Model")
 TTaskModule = TypeVar("TTaskModule", bound="TaskModule")
@@ -25,8 +130,6 @@ class AnnotationPipeline(
     Generic[TModel, TTaskModule],
     ABC,
 ):
-    auto_model_class = AutoModel
-    auto_taskmodule_class = AutoTaskModule
 
     def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
         super().__init__(**kwargs)
@@ -131,91 +234,7 @@ class AnnotationPipeline(
         **kwargs,
     ) -> Union[Document, Sequence[Document]]: ...
 
-    @classmethod
-    def from_pretrained(
-        cls,
-        pretrained_model_name_or_path: str,
-        force_download: bool = False,
-        resume_download: bool = False,
-        proxies: Optional[Dict] = None,
-        use_auth_token: Optional[str] = None,
-        cache_dir: Optional[str] = None,
-        local_files_only: bool = False,
-        **kwargs,
-    ) -> "AnnotationPipeline":
-        taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule", None)
-        if "taskmodule_kwargs" in kwargs:
-            logger.warning("taskmodule_kwargs is deprecated. Use taskmodule instead.")
-            taskmodule_or_taskmodule_kwargs = kwargs.pop("taskmodule_kwargs")
-        model_or_model_kwargs = kwargs.pop("model", None)
-        if "model_kwargs" in kwargs:
-            logger.warning("model_kwargs is deprecated. Use model instead.")
-            model_or_model_kwargs = kwargs.pop("model_kwargs")
 
-        if isinstance(model_or_model_kwargs, Model):
-            # if model is already a Model instance, use it directly
-            model = model_or_model_kwargs
-        else:
-            # otherwise, create a new Model instance via AutoModel
-            model = cls.auto_model_class.from_pretrained(
-                pretrained_model_name_or_path=pretrained_model_name_or_path,
-                force_download=force_download,
-                resume_download=resume_download,
-                proxies=proxies,
-                use_auth_token=use_auth_token,
-                cache_dir=cache_dir,
-                local_files_only=local_files_only,
-                **(model_or_model_kwargs or {}),
-            )
-
-        if isinstance(taskmodule_or_taskmodule_kwargs, TaskModule):
-            # if taskmodule is already a TaskModule instance, use it directly
-            taskmodule = taskmodule_or_taskmodule_kwargs
-        else:
-            # otherwise:
-            # 1. try to retrieve the taskmodule config
-            taskmodule_config, remaining_taskmodule_kwargs = (
-                cls.auto_taskmodule_class.retrieve_config(
-                    model_id=pretrained_model_name_or_path,
-                    force_download=force_download,
-                    resume_download=resume_download,
-                    proxies=proxies,
-                    cache_dir=cache_dir,
-                    local_files_only=local_files_only,
-                    **(taskmodule_or_taskmodule_kwargs or {}),
-                )
-            )
-            # set is_from_pretrained to True
-            remaining_taskmodule_kwargs["is_from_pretrained"] = True
-            # 2. If either the taskmodule config or the original taskmodule kwargs are not None,
-            #    create a taskmodule from the config and / or kwargs
-            if taskmodule_config is not None or taskmodule_or_taskmodule_kwargs is not None:
-                taskmodule = cls.auto_taskmodule_class.from_config(
-                    config=taskmodule_config or {}, **remaining_taskmodule_kwargs
-                )
-            # 4. If the taskmodule is still None, do not create a taskmodule.
-            #    It is assumed that the model contains the taskmodule.
-            else:
-                taskmodule = None
-
-        kwargs["model"] = model
-        if taskmodule is not None:
-            kwargs["taskmodule"] = taskmodule
-
-        pipeline = super().from_pretrained(
-            pretrained_model_name_or_path=pretrained_model_name_or_path,
-            force_download=force_download,
-            resume_download=resume_download,
-            proxies=proxies,
-            use_auth_token=use_auth_token,
-            cache_dir=cache_dir,
-            local_files_only=local_files_only,
-            **kwargs,
-        )
-
-        return pipeline
-
-
-class AutoAnnotationPipeline(AnnotationPipeline, Auto[AnnotationPipeline]):
+class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
 
     BASE_CLASS = AnnotationPipeline

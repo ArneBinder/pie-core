@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import requests
-from huggingface_hub.constants import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import SoftTemporaryDirectory, validate_hf_hub_args
@@ -14,10 +13,6 @@ from pie_core.utils.dictionary import TNestedBoolDict, dict_update_nested
 
 logger = logging.getLogger(__name__)
 
-MODEL_CONFIG_NAME = CONFIG_NAME
-TASKMODULE_CONFIG_NAME = "taskmodule_config.json"
-MODEL_CONFIG_TYPE_KEY = "model_type"
-TASKMODULE_CONFIG_TYPE_KEY = "taskmodule_type"
 
 # Generic variable that is either PieBaseHFHubMixin or a subclass thereof
 T = TypeVar("T", bound="PieBaseHFHubMixin")
@@ -31,8 +26,8 @@ class PieBaseHFHubMixin:
     of mixin integration with the Hub. Check out our [integration guide](../guides/integrations) for more instructions.
     """
 
-    config_name = MODEL_CONFIG_NAME
-    config_type_key = MODEL_CONFIG_TYPE_KEY
+    config_name = "not_implemented.json"
+    config_type_key = "not_implemented"
 
     def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,7 +99,7 @@ class PieBaseHFHubMixin:
         raise NotImplementedError
 
     @classmethod
-    def retrieve_config(
+    def retrieve_config_file(
         cls,
         model_id: Union[str, Path],
         force_download: bool = False,
@@ -115,8 +110,8 @@ class PieBaseHFHubMixin:
         local_files_only: bool = False,
         revision: Optional[str] = None,
         fail_silently: bool = False,
-        **kwargs,
-    ) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        **remaining_kwargs,
+    ) -> Tuple[Optional[str], Dict[str, Any]]:
         """Retrieve the configuration file from the Huggingface Hub or local directory.
 
         Returns None if the config file is not found.
@@ -145,11 +140,7 @@ class PieBaseHFHubMixin:
                 if not fail_silently:
                     logger.warning(f"{cls.config_name} not found in HuggingFace Hub.")
 
-        if config_file is not None:
-            with open(config_file, encoding="utf-8") as f:
-                config = json.load(f)
-            return config, kwargs
-        return None, kwargs
+        return config_file, remaining_kwargs
 
     @classmethod
     @validate_hf_hub_args
@@ -196,7 +187,7 @@ class PieBaseHFHubMixin:
         """
         model_id = pretrained_model_name_or_path
 
-        config, _ = cls.retrieve_config(
+        config_file, _ = cls.retrieve_config_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
@@ -205,9 +196,12 @@ class PieBaseHFHubMixin:
             resume_download=resume_download,
             local_files_only=local_files_only,
             token=token,
+            fail_silently=False,
         )
 
-        if config is not None:
+        if config_file is not None:
+            with open(config_file, encoding="utf-8") as f:
+                config = json.load(f)
             model_kwargs.update({"config": config})
 
         # The value of is_from_pretrained is set to True when the model is loaded from pretrained.
@@ -376,168 +370,3 @@ class PieBaseHFHubMixin:
         config = config.copy()
         dict_update_nested(config, kwargs, override=config_override)
         return cls(**config)
-
-
-TModel = TypeVar("TModel", bound="PieModelHFHubMixin")
-
-
-class PieModelHFHubMixin(PieBaseHFHubMixin):
-    config_name = MODEL_CONFIG_NAME
-    config_type_key = MODEL_CONFIG_TYPE_KEY
-    weights_file_name = PYTORCH_WEIGHTS_NAME
-    """Implementation of [`ModelHubMixin`] to provide model Hub upload/download capabilities to
-    PyTorch models. The model is set in evaluation mode by default using `model.eval()` (dropout
-    modules are deactivated). To train the model, you should first set it back in training mode
-    with `model.train()`.
-
-    Example:
-
-    ```python
-    >>> import torch
-    >>> import torch.nn as nn
-    >>> from huggingface_hub import PyTorchModelHubMixin
-
-
-    >>> class MyModel(nn.Module, PyTorchModelHubMixin):
-    ...     def __init__(self):
-    ...         super().__init__()
-    ...         self.param = nn.Parameter(torch.rand(3, 4))
-    ...         self.linear = nn.Linear(4, 5)
-
-    ...     def forward(self, x):
-    ...         return self.linear(x + self.param)
-    >>> model = MyModel()
-
-    # Save model weights to local directory
-    >>> model.save_pretrained("my-awesome-model")
-
-    # Push model weights to the Hub
-    >>> model.push_to_hub("my-awesome-model")
-
-    # Download and initialize weights from the Hub
-    >>> model = MyModel.from_pretrained("username/my-awesome-model")
-    ```
-    """
-
-    def save_model_file(self, model_file: str) -> None:
-        """Save weights from a Pytorch model to a local directory."""
-        raise NotImplementedError
-
-    def load_model_file(
-        self, model_file: str, map_location: str = "cpu", strict: bool = False
-    ) -> None:
-        """Load weights from a Pytorch model file."""
-        raise NotImplementedError
-
-    def _save_pretrained(self, save_directory: Path) -> None:
-        """Save weights from a Pytorch model to a local directory."""
-        self.save_model_file(str(save_directory / self.weights_file_name))
-
-    @classmethod
-    def _from_pretrained(
-        cls: Type[TModel],
-        *,
-        model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
-        map_location: str = "cpu",
-        strict: bool = False,
-        config: Optional[dict] = None,
-        **kwargs,
-    ) -> TModel:
-
-        model = cls.from_config(config=config or {}, **kwargs)
-        """Load Pytorch pretrained weights and return the loaded model."""
-        if os.path.isdir(model_id):
-            logger.info("Loading weights from local directory")
-            model_file = os.path.join(model_id, model.weights_file_name)
-        else:
-            model_file = hf_hub_download(
-                repo_id=model_id,
-                filename=model.weights_file_name,
-                revision=revision,
-                cache_dir=cache_dir,
-                force_download=force_download,
-                proxies=proxies,
-                resume_download=resume_download,
-                token=token,
-                local_files_only=local_files_only,
-            )
-
-        model.load_model_file(model_file, map_location=map_location, strict=strict)
-
-        return model
-
-
-TTaskModule = TypeVar("TTaskModule", bound="PieTaskModuleHFHubMixin")
-
-
-class PieTaskModuleHFHubMixin(PieBaseHFHubMixin):
-    config_name = TASKMODULE_CONFIG_NAME
-    config_type_key = TASKMODULE_CONFIG_TYPE_KEY
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def _save_pretrained(self, save_directory) -> None:
-        return None
-
-    @classmethod
-    def _from_pretrained(
-        cls: Type[TTaskModule],
-        *,
-        model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
-        map_location: str = "cpu",
-        strict: bool = False,
-        config: Optional[dict] = None,
-        **kwargs,
-    ) -> TTaskModule:
-
-        taskmodule = cls.from_config(config=config or {}, **kwargs)
-
-        return taskmodule
-
-
-TPipeline = TypeVar("TPipeline", bound="AnnotationPipelineHFHubMixin")
-
-
-class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
-    config_name = "pipeline_config.json"
-    config_type_key = "pipeline_type"
-
-    def _save_pretrained(self, save_directory) -> None:
-        return None
-
-    @classmethod
-    def _from_pretrained(
-        cls: Type[TPipeline],
-        *,
-        model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
-        map_location: str = "cpu",
-        strict: bool = False,
-        config: Optional[dict] = None,
-        **kwargs,
-    ) -> TPipeline:
-
-        pipeline = cls.from_config(config=config or {}, **kwargs)
-
-        return pipeline

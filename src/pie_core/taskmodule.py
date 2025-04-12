@@ -2,6 +2,7 @@ import copy
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Sequence
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -20,7 +21,7 @@ from tqdm import tqdm
 
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
-from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TNestedBoolDict
+from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
@@ -43,10 +44,40 @@ TaskOutput = TypeVar("TaskOutput")
 
 logger = logging.getLogger(__name__)
 
+TTaskModuleHFHubMixin = TypeVar("TTaskModuleHFHubMixin", bound="TaskModuleHFHubMixin")
+
+
+class TaskModuleHFHubMixin(PieBaseHFHubMixin):
+    config_name = "taskmodule_config.json"
+    config_type_key = "taskmodule_type"
+
+    def _save_pretrained(self, save_directory) -> None:
+        return None
+
+    @classmethod
+    def _from_pretrained(
+        cls: Type[TTaskModuleHFHubMixin],
+        *,
+        model_id: str,
+        revision: Optional[str],
+        cache_dir: Optional[Union[str, Path]],
+        force_download: bool,
+        proxies: Optional[Dict],
+        resume_download: bool,
+        local_files_only: bool,
+        token: Union[str, bool, None],
+        config: Optional[dict] = None,
+        **kwargs,
+    ) -> TTaskModuleHFHubMixin:
+
+        taskmodule = cls.from_config(config=config or {}, **kwargs)
+
+        return taskmodule
+
 
 class TaskModule(
     ABC,
-    PieTaskModuleHFHubMixin,
+    TaskModuleHFHubMixin,
     HyperparametersMixin,
     Registrable["TaskModule"],
     WithDocumentTypeMixin,
@@ -417,6 +448,6 @@ class TaskModule(
         return None
 
 
-class AutoTaskModule(PieTaskModuleHFHubMixin, Auto[TaskModule]):
+class AutoTaskModule(TaskModuleHFHubMixin, Auto[TaskModule]):
 
     BASE_CLASS = TaskModule
