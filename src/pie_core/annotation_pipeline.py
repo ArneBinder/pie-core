@@ -51,8 +51,6 @@ class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
         resume_download: bool,
         local_files_only: bool,
         token: Union[str, bool, None],
-        map_location: str = "cpu",
-        strict: bool = False,
         config: Optional[dict] = None,
         **kwargs,
     ) -> TAnnotationPipelineHFHubMixin:

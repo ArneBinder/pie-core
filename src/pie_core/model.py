@@ -118,11 +118,24 @@ class ModelHFHubMixin(PieBaseHFHubMixin):
         resume_download: bool,
         local_files_only: bool,
         token: Union[str, bool, None],
-        map_location: str = "cpu",
-        strict: bool = False,
         config: Optional[dict] = None,
+        load_model_file: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> TModelHFHubMixin:
+
+        load_model_file_kwargs = load_model_file or {}
+        if "map_location" in kwargs:
+            map_location = kwargs.pop("map_location")
+            logger.warning(
+                f'map_location is deprecated. Use load_model_file=\\{"map_location": "{map_location}"\\} instead.'
+            )
+            load_model_file_kwargs["map_location"] = map_location
+        if "strict" in kwargs:
+            strict = kwargs.pop("strict")
+            logger.warning(
+                f'strict is deprecated. Use load_model_file=\\{"strict": {strict}\\} instead.'
+            )
+            load_model_file_kwargs["strict"] = strict
 
         model_file, remaining_kwargs = cls.retrieve_model_file(
             model_id=model_id,
@@ -136,10 +149,8 @@ class ModelHFHubMixin(PieBaseHFHubMixin):
             **kwargs,
         )
         model = cls.from_config(config=config or {}, **remaining_kwargs)
-
-        # TODO: map_location and strict are quite specific to PyTorch.
-        #  How to handle this in a more generic way?
-        model.load_model_file(model_file, map_location=map_location, strict=strict)
+        # load the model weights
+        model.load_model_file(model_file, **load_model_file_kwargs)
 
         return model
 
