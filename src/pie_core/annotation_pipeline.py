@@ -126,14 +126,12 @@ TTaskModule = TypeVar("TTaskModule", bound="TaskModule")
 
 
 class AnnotationPipeline(
-    PieBaseHFHubMixin,
+    AnnotationPipelineHFHubMixin,
     HyperparametersMixin,
     Registrable["AnnotationPipeline"],
     Generic[TModel, TTaskModule],
     ABC,
 ):
-    config_name = "pipeline_config.json"
-    config_type_key = "pipeline_type"
 
     def __init__(self, model: TModel, taskmodule: Optional[TTaskModule] = None, **kwargs):
         super().__init__(**kwargs)
