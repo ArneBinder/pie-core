@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
-from pie_core.hf_hub_mixin import PieTaskModuleHFHubMixin, TNestedBoolDict
+from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
@@ -42,6 +42,11 @@ TaskOutput = TypeVar("TaskOutput")
 
 
 logger = logging.getLogger(__name__)
+
+
+class PieTaskModuleHFHubMixin(PieBaseHFHubMixin):
+    config_name = "taskmodule_config.json"
+    config_type_key = "taskmodule_type"
 
 
 class TaskModule(
