@@ -210,20 +210,20 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
     if override is None:
         override = {}
 
-    for k, v_u in u.items():
-        o = override.get(k)
+    for k_u, v_u in u.items():
+        o = override.get(k_u)
         # force override with new value
         if o is True:
-            d[k] = v_u
+            d[k_u] = v_u
         # force ignore the new value
         elif o is False:
             pass
         # both dicts, update nested
-        elif isinstance(v_u, dict) and isinstance(d.get(k), dict):
-            dict_update_nested(d[k], v_u, override=o)
+        elif isinstance(v_u, dict) and isinstance(d.get(k_u), dict):
+            dict_update_nested(d[k_u], v_u, override=o)
         # finally, just one is a dict, but the other is not
         else:
-            d[k] = v_u
+            d[k_u] = v_u
 
     overrides_not_in_update = set(override) - set(u)
     if len(overrides_not_in_update) > 0:
