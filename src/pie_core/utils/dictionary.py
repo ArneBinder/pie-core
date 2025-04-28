@@ -218,10 +218,10 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
         # force ignore the new value
         elif o is False:
             pass
-        # both dicts, update nested
+        # both dicts: update nested
         elif isinstance(v_u, dict) and isinstance(d.get(k_u), dict):
             dict_update_nested(d[k_u], v_u, override=o)
-        # finally, just one is a dict, but the other is not
+        # override (or set if did not exist) with new value
         else:
             d[k_u] = v_u
 
