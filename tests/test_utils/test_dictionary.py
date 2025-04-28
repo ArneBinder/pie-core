@@ -1,7 +1,10 @@
+from copy import deepcopy
+
 import pytest
 
 from pie_core.utils.dictionary import (
     dict_of_lists2list_of_dicts,
+    dict_update_nested,
     flatten_dict,
     flatten_dict_s,
     list_of_dicts2dict_of_lists,
@@ -171,3 +174,33 @@ def test_unflatten_dict_s_multiple_roots():
         str(excinfo.value)
         == "Conflict at path ('a',): trying to overwrite existing dict with a non-dict value."
     )
+
+
+def test_dict_update_nested():
+
+    dct = {"a": {"b": 1}, "c": 2, "d": 3}
+    u = {"a": {"b": 4}, "c": 5, "e": 6}
+
+    d = deepcopy(dct)
+    dict_update_nested(d, u)
+    assert d == {"a": {"b": 4}, "c": 5, "d": 3, "e": 6}
+
+    d = deepcopy(dct)
+    dict_update_nested(d, u, True)
+    assert d == u
+
+    d = deepcopy(dct)
+    dict_update_nested(d, u, False)
+    assert d == dct
+
+    d = deepcopy(dct)
+    dict_update_nested(d, u, {"a": True})
+    assert d == {"a": {"b": 4}, "c": 5, "d": 3, "e": 6}
+
+    d = deepcopy(dct)
+    dict_update_nested(d, u, {"a": False})
+    assert d == {"a": {"b": 1}, "c": 5, "d": 3, "e": 6}
+
+    with pytest.raises(ValueError) as excinfo:
+        dict_update_nested({"a": 1}, {"a": {"b": 1}})
+    assert str(excinfo.value) == "Cannot merge 1 and {'b': 1} because 1 is not a dict."
