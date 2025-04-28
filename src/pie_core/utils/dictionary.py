@@ -210,13 +210,20 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
     if override is None:
         override = {}
 
-    for k, v in u.items():
-        if isinstance(v, dict) and k in d:
-            if not isinstance(d[k], dict):
-                raise ValueError(f"Cannot merge {d[k]} and {v} because {d[k]} is not a dict.")
-            dict_update_nested(d[k], v, override=override.get(k))
+    for k, v_u in u.items():
+        o = override.get(k)
+        # force override with new value
+        if o is True:
+            d[k] = v_u
+        # force ignore the new value
+        elif o is False:
+            pass
+        # both dicts, update nested
+        elif isinstance(v_u, dict) and isinstance(d.get(k), dict):
+            dict_update_nested(d[k], v_u, override=o)
+        # finally, just one is a dict, but the other is not
         else:
-            d[k] = v
+            d[k] = v_u
 
     overrides_not_in_update = set(override) - set(u)
     if len(overrides_not_in_update) > 0:
