@@ -175,6 +175,32 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
             If a dictionary, recursively merge the dictionaries, using the provided dictionary as the override.
     Returns:
         None
+
+    Examples:
+        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+        >>> u = {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+        >>> dict_update_nested(d, u, True)
+        >>> d == u ==  {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+        True
+
+        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+        >>> u = {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+        >>> dict_update_nested(d, u, False)
+        >>> d == {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+        True
+
+        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+        >>> u = {"a": {"b": {"c": 4, "d": 5}}}
+        >>> dict_update_nested(d, u)
+        >>> d == {"a": {"b": {"c": 4, "d": 5}, "e": 3}}
+        True
+
+        >>> d = {"a": {"b": {"c": 1}, "d": {"e": 2}}}
+        >>> u = {"a": {"b": {"c": 3}, "d": {"e": 4}}}
+        >>> override = {"a": {"b": True, "d": False}}
+        >>> dict_update_nested(d, u, override)
+        >>> d == {"a": {"b": {"c": 3}, "d": {"e": 2}}}
+        True
     """
     if isinstance(override, bool):
         if override:
