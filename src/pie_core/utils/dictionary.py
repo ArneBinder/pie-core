@@ -217,3 +217,10 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
             dict_update_nested(d[k], v, override=override.get(k))
         else:
             d[k] = v
+
+    overrides_not_in_update = set(override) - set(u)
+    if len(overrides_not_in_update) > 0:
+        raise ValueError(
+            f"Cannot merge {u} into {d} with override={override} because the "
+            f"override contains keys not in the update: {sorted(overrides_not_in_update)}"
+        )
