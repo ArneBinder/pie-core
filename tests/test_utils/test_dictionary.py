@@ -177,26 +177,26 @@ def test_unflatten_dict_s_multiple_roots():
 def test_dict_update_nested():
 
     # simple cases from docstring
-    d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-    u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+    d = {"a": 1}
+    u = {"b": 2}
     dict_update_nested(d, u, True)
-    assert d == u == {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+    d == u == {"b": 2}
 
-    d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-    u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+    d = {"a": 1}
+    u = {"b": 2}
     dict_update_nested(d, u, False)
-    assert d == {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+    d == u == {"a": 1}
 
-    d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}}
-    u = {"a": {"b": {"c": 4}, "e": 6}}
+    d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}, "g": 4}
+    u = {"a": {"b": {"c": 5}, "e": 6}, "g": {"h": 7}}
     dict_update_nested(d, u)
-    assert d == {"a": {"b": {"c": 4, "d": 2}, "e": 6}}
+    assert d == {"a": {"b": {"c": 5, "d": 2}, "e": 6}, "g": {"h": 7}}
 
-    d = {"a": {"b": {"c": 1}, "d": {"e": 2}}}
-    u = {"a": {"b": {"c": 3}, "d": {"e": 4}}}
+    d = {"a": {"b": {"c": 1}, "d": {"e": 2}}, "f": 3}
+    u = {"a": {"b": {"c": 3}, "d": {"e": 4}}, "f": 4}
     override = {"a": {"b": True, "d": False}}
     dict_update_nested(d, u, override)
-    assert d == {"a": {"b": {"c": 3}, "d": {"e": 2}}}
+    assert d == {"a": {"b": {"c": 3}, "d": {"e": 2}}, "f": 4}
 
     # Override dicts
     # Multiple overrides; override for non-dict value

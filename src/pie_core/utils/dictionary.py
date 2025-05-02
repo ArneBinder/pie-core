@@ -164,29 +164,38 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
     """Update a dictionary with another dictionary, recursively.
 
     Examples:
-        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-        >>> u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+
+        Override=True:
+
+        >>> d = {"a": 1}
+        >>> u = {"b": 2}
         >>> dict_update_nested(d, u, True)
-        >>> d == u ==  {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+        >>> d == u == {"b": 2}
         True
 
-        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-        >>> u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
+        override=False:
+
+        >>> d = {"a": 1}
+        >>> u = {"b": 2}
         >>> dict_update_nested(d, u, False)
-        >>> d == {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
+        >>> d == {"a": 1}
         True
 
-        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}}
-        >>> u = {"a": {"b": {"c": 4}, "e": 6}}
+        Recursively update:
+
+        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}, "g": 4       }
+        >>> u = {"a": {"b": {"c": 5        }, "e": 6       }, "g": {"h": 7}}
         >>> dict_update_nested(d, u)
-        >>> d == {"a": {"b": {"c": 4, "d": 2}, "e": 6}}
+        >>> d == {"a": {"b": {"c": 5, "d": 2}, "e": 6       }, "g": {"h": 7}}
         True
 
-        >>> d = {"a": {"b": {"c": 1}, "d": {"e": 2}}}
-        >>> u = {"a": {"b": {"c": 3}, "d": {"e": 4}}}
+        Override dict:
+
+        >>> d = {"a": {"b": {"c": 1}, "d": {"e": 2}}, "f": 3}
+        >>> u = {"a": {"b": {"c": 3}, "d": {"e": 4}}, "f": 4}
         >>> override = {"a": {"b": True, "d": False}}
         >>> dict_update_nested(d, u, override)
-        >>> d == {"a": {"b": {"c": 3}, "d": {"e": 2}}}
+        >>> d == {"a": {"b": {"c": 3}, "d": {"e": 2}}, "f": 4}
         True
     Args:
         d (`dict`):
