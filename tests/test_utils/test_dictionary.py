@@ -178,19 +178,19 @@ def test_dict_update_nested():
 
     # simple cases from docstring
     d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-    u = {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+    u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
     dict_update_nested(d, u, True)
-    assert d == u == {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+    assert d == u == {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
 
     d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-    u = {"a": {"b": {"c": 4, "d": 5}, "f": 6}}
+    u = {"a": {"b": {"c": 4, "d": 5}, "f": {"g": 6}}}
     dict_update_nested(d, u, False)
     assert d == {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
 
-    d = {"a": {"b": {"c": 1, "d": 2}, "e": 3}}
-    u = {"a": {"b": {"c": 4, "d": 5}}}
+    d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}}
+    u = {"a": {"b": {"c": 4}, "e": 6}}
     dict_update_nested(d, u)
-    assert d == {"a": {"b": {"c": 4, "d": 5}, "e": 3}}
+    assert d == {"a": {"b": {"c": 4, "d": 2}, "e": 6}}
 
     d = {"a": {"b": {"c": 1}, "d": {"e": 2}}}
     u = {"a": {"b": {"c": 3}, "d": {"e": 4}}}
@@ -199,12 +199,12 @@ def test_dict_update_nested():
     assert d == {"a": {"b": {"c": 3}, "d": {"e": 2}}}
 
     # Override dicts
-    # 'd' override ignored, override value is used only if merging values are both dicts.
+    # Multiple overrides; override for non-dict value
     d = {"a": {"b": {"c": 1}}, "d": 2, "e": 3}
     u = {"a": {"b": {"c": 3}}, "d": 4, "f": 5}
     override = {"a": {"b": True}, "d": False}
     dict_update_nested(d, u, override)
-    assert d == {"a": {"b": {"c": 3}}, "d": 4, "e": 3, "f": 5}
+    assert d == {"a": {"b": {"c": 3}}, "d": 2, "e": 3, "f": 5}
 
     # More nested override
     d = {"a": {"b": {"c": {"d": 1}}}}
@@ -216,23 +216,18 @@ def test_dict_update_nested():
     # Override for multiple targets
     d = {"a": {"b": {"c": {"d": 1}, "e": {"f": 2}}}}
     u = {"a": {"b": {"c": {"d": 3}, "e": {"f": 4}}}}
-    override = {"a": {"b": {"c": True, "e": False}}}
+    override = {"a": {"b": {"c": True, "e": {"f": False}}}}
     dict_update_nested(d, u, override)
     assert d == {"a": {"b": {"c": {"d": 3}, "e": {"f": 2}}}}
 
-    # Override contains a target not contained in any of dicts (should not impact anything)
-    d = {"a": {"b": {"c": {"d": 1}, "e": {"f": 2}}}}
-    u = {"a": {"b": {"c": {"d": 3}, "e": {"f": 4}}}}
-    override = {"g": True, "h": False}
-    dict_update_nested(d, u, override)
-    assert d == {"a": {"b": {"c": {"d": 3}, "e": {"f": 4}}}}
-
-    # Update not-dict value with dict value
+    # Override target not in update
+    d = {"a": {"b": 1}}
+    u = {"a": {"c": 1}}
+    override = {"a": {"b": True}}
     with pytest.raises(ValueError) as excinfo:
-        dict_update_nested({"a": 1}, {"a": {"b": 1}})
-    assert str(excinfo.value) == "Cannot merge 1 and {'b': 1} because 1 is not a dict."
-
-    # !Vice-versa is not checked and dict will be updated
-    # with pytest.raises(ValueError) as excinfo:
-    #     dict_update_nested({"a": {"b": 1}}, {"a": 1})
-    # assert str(excinfo.value) == "Cannot merge {'b': 1} and 1 because 1 is not a dict."
+        dict_update_nested(d, u, override)
+    assert (
+        str(excinfo.value)
+        == "Cannot merge {'c': 1} into {'b': 1, 'c': 1} with override={'b': True} "
+        "because the override contains keys not in the update: ['b']"
+    )
