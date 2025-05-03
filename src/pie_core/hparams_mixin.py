@@ -36,17 +36,6 @@ _ALLOWED_CONFIG_TYPES = (AttributeDict, MutableMapping, Namespace)
 _given_hyperparameters: ContextVar = ContextVar("_given_hyperparameters", default=None)
 
 
-@contextmanager
-def _given_hyperparameters_context(hparams: dict, instantiator: str) -> Iterator[None]:
-    hparams = hparams.copy()
-    hparams["_instantiator"] = instantiator
-    token = _given_hyperparameters.set(hparams)
-    try:
-        yield
-    finally:
-        _given_hyperparameters.reset(token)
-
-
 class PieHyperparametersMixin:
     __jit_unused_properties__: list[str] = ["hparams", "hparams_initial"]
 
