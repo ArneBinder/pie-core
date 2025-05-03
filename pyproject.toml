@@ -24,7 +24,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pytorch-lightning = "^2.1.0"
 huggingface_hub = ">=0.23.4,<0.26.0"
 
 [tool.poetry.group.dev.dependencies]
