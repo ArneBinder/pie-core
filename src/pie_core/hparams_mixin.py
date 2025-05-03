@@ -1,4 +1,4 @@
-# The implementations in this file are tasken from the PyTorch Lightning codebase.
+# The implementations in this file are taken from the PyTorch Lightning codebase.
 # Changes: HyperparametersMixin is renamed to PieHyperparametersMixin to avoid
 # conflicts with the original PyTorch Lightning implementation.
 #
