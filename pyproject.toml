@@ -36,6 +36,11 @@ pytest-cov = "^4.1.0"
 pre-commit = "^3.4.0"
 
 [[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[[tool.poetry.source]]
 name = "pre-release"
 url = "https://test.pypi.org/simple/"
 priority = "explicit"
