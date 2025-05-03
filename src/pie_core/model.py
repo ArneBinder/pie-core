@@ -155,7 +155,7 @@ class ModelHFHubMixin(PieBaseHFHubMixin):
         return model
 
 
-class Model(ModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
+class Model(ModelHFHubMixin, Registrable["Model"]):
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -169,11 +169,11 @@ class Model(ModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
                 " @Model.register() or @Model.register(name='...') to register it at as a Model"
                 " which will allow to load it via AutoModel."
             )
-        # add all hparams
-        config.update(self.hparams)
+
         return config
 
 
-class AutoModel(ModelHFHubMixin, Auto[Model]):
+# ignore the typing error, see T in auto.py for details
+class AutoModel(ModelHFHubMixin, Auto[Model]):  # type: ignore
 
     BASE_CLASS = Model
