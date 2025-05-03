@@ -163,6 +163,40 @@ TNestedBoolDict = Union[bool, Dict[str, "TNestedBoolDict"]]
 def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = None) -> None:
     """Update a dictionary with another dictionary, recursively.
 
+    Examples:
+
+        Override=True:
+
+        >>> d = {"a": 1}
+        >>> u = {"b": 2}
+        >>> dict_update_nested(d, u, True)
+        >>> d == u == {"b": 2}
+        True
+
+        override=False:
+
+        >>> d = {"a": 1}
+        >>> u = {"b": 2}
+        >>> dict_update_nested(d, u, False)
+        >>> d == {"a": 1}
+        True
+
+        Recursively update:
+
+        >>> d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}, "g": 4       }
+        >>> u = {"a": {"b": {"c": 5        }, "e": 6       }, "g": {"h": 7}}
+        >>> dict_update_nested(d, u)
+        >>> d == {"a": {"b": {"c": 5, "d": 2}, "e": 6       }, "g": {"h": 7}}
+        True
+
+        Override dict:
+
+        >>> d = {"a": {"b": {"c": 1}, "d": {"e": 2}}, "f": 3}
+        >>> u = {"a": {"b": {"c": 3}, "d": {"e": 4}}, "f": 4}
+        >>> override = {"a": {"b": True, "d": False}}
+        >>> dict_update_nested(d, u, override)
+        >>> d == {"a": {"b": {"c": 3}, "d": {"e": 2}}, "f": 4}
+        True
     Args:
         d (`dict`):
             The original dictionary to update.
@@ -184,10 +218,24 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
     if override is None:
         override = {}
 
-    for k, v in u.items():
-        if isinstance(v, dict) and k in d:
-            if not isinstance(d[k], dict):
-                raise ValueError(f"Cannot merge {d[k]} and {v} because {d[k]} is not a dict.")
-            dict_update_nested(d[k], v, override=override.get(k))
+    for k_u, v_u in u.items():
+        o = override.get(k_u)
+        # force override with new value
+        if o is True:
+            d[k_u] = v_u
+        # force ignore the new value
+        elif o is False:
+            pass
+        # both dicts: update nested
+        elif isinstance(v_u, dict) and isinstance(d.get(k_u), dict):
+            dict_update_nested(d[k_u], v_u, override=o)
+        # override (or set if did not exist) with new value
         else:
-            d[k] = v
+            d[k_u] = v_u
+
+    overrides_not_in_update = set(override) - set(u)
+    if len(overrides_not_in_update) > 0:
+        raise ValueError(
+            f"Cannot merge {u} into {d} with override={override} because the "
+            f"override contains keys not in the update: {sorted(overrides_not_in_update)}"
+        )
