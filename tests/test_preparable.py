@@ -13,6 +13,10 @@ class PreparableObject(PreparableMixin):
     def _prepare(self):
         self.attr = True
 
+    def _post_prepare(self):
+        if self.attr:
+            logger.info("Post-prepared successfully!")
+
 
 @pytest.fixture(scope="module")
 def prepared_object():
@@ -48,6 +52,16 @@ def test_assert_is_prepared(unprepared_object):
     assert str(excinfo.value) == "Required attributes that are not set: ['attr']"
 
 
+def test_post_prepare(prepared_object, unprepared_object, caplog):
+    with caplog.at_level(logging.INFO):
+        prepared_object.post_prepare()
+    assert "Post-prepared successfully!" in caplog.text
+
+    with pytest.raises(Exception) as excinfo:
+        unprepared_object.post_prepare()
+    assert str(excinfo.value) == "Required attributes that are not set: ['attr']"
+
+
 def test_prepare():
     obj = PreparableObject()
     assert not obj.is_prepared
@@ -65,15 +79,17 @@ def test_prepare_prepared_object(prepared_object, caplog):
 
 
 def test_prepare_with_bad_prepare_impl():
-    obj = PreparableObject()
+    class WrongPrepareObject(PreparableMixin):
+        PREPARED_ATTRIBUTES = ["attr"]
 
-    def bad_prepare():
-        pass
+        def _prepare(self):
+            pass
 
-    obj._prepare = bad_prepare
+    obj = WrongPrepareObject()
+
     with pytest.raises(Exception) as excinfo:
         obj.prepare()
     assert str(excinfo.value) == (
-        "_prepare() was called, but the PreparableObject is not prepared. "
+        "_prepare() was called, but the WrongPrepareObject is not prepared. "
         "Required attributes that are not set: ['attr']"
     )
