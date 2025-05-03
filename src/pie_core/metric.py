@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, Iterable, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, Iterable, Optional, TypeVar, Union
 
 from pie_core.document import Document
 from pie_core.module_mixins import WithDocumentTypeMixin
@@ -73,3 +73,27 @@ class DocumentMetric(ABC, WithDocumentTypeMixin, Generic[T]):
     def current_split(self) -> Optional[str]:
         """The current split that is being processed."""
         return self._current_split
+
+
+TPredictions = TypeVar("TPredictions")
+TTargets = TypeVar("TTargets")
+
+
+class EncodingMetric(Generic[TPredictions, TTargets], ABC):
+    """This defines the interface for a metric that is used to compute score(s) based on (model)
+    predictions and targets (probably in batch form).
+
+    It loosely follows the Metric API of torchmetrics.
+    """
+
+    def reset(self) -> None:
+        """Any (state) reset logic that needs to be performed before the metric is called again."""
+        pass
+
+    def update(self, predictions: TPredictions, targets: TTargets) -> None:
+        """This method is called to update the metric state with the predictions and targets."""
+        pass
+
+    def compute(self) -> Any:
+        """This method is called to compute the metric value(s) from the metric state."""
+        pass
