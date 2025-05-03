@@ -146,9 +146,9 @@ def save_hyperparameters(
     else:
         init_args = {}
 
-        from pytorch_lightning.core.mixins import HyperparametersMixin
+        from pie_core.hparams_mixin import PieHyperparametersMixin
 
-        for local_args in collect_init_args(frame, [], classes=(HyperparametersMixin,)):
+        for local_args in collect_init_args(frame, [], classes=(PieHyperparametersMixin,)):
             init_args.update(local_args)
 
     if ignore is None:
