@@ -442,7 +442,7 @@ class TaskModule(
     @abstractmethod
     def collate(
         self, task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]]
-    ) -> Tuple[InputBatchEncoding, Optional[TargetBatchEncoding]]:
+    ) -> TaskBatchEncoding:
         pass
 
     def configure_model_metric(
