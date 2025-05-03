@@ -87,13 +87,13 @@ class EncodingMetric(Generic[TPredictions, TTargets], ABC):
     """
 
     def reset(self) -> None:
-        """Any reset logic that needs to be performed before the metric is called again."""
+        """Any (state) reset logic that needs to be performed before the metric is called again."""
         pass
 
     def update(self, predictions: TPredictions, targets: TTargets) -> None:
-        """This method is called to update the metric with the predictions and targets."""
+        """This method is called to update the metric state with the predictions and targets."""
         pass
 
     def compute(self) -> Any:
-        """This method is called to compute the metric."""
+        """This method is called to compute the metric value(s) from the metric state."""
         pass
