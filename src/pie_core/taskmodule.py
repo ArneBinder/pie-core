@@ -465,6 +465,7 @@ class TaskModule(
         return None
 
 
-class AutoTaskModule(TaskModuleHFHubMixin, Auto[TaskModule]):
+# ignore the typing error, see T in auto.py for details
+class AutoTaskModule(TaskModuleHFHubMixin, Auto[TaskModule]):  # type: ignore
 
     BASE_CLASS = TaskModule

@@ -234,6 +234,7 @@ class AnnotationPipeline(
     ) -> Union[Document, Sequence[Document]]: ...
 
 
-class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
+# ignore the typing error, see T in auto.py for details
+class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):  # type: ignore
 
     BASE_CLASS = AnnotationPipeline
