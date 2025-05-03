@@ -21,7 +21,7 @@ from tqdm import tqdm
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
-from pie_core.metric import ModelMetric
+from pie_core.metric import EncodingMetric
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
@@ -447,10 +447,10 @@ class TaskModule(
 
     def configure_model_metric(
         self, stage: str
-    ) -> Optional[ModelMetric[ModelBatchOutput, TargetBatchEncoding]]:
+    ) -> Optional[EncodingMetric[ModelBatchOutput, TargetBatchEncoding]]:
         logger.warning(
             f"TaskModule {self.__class__.__name__} does not implement a model metric. "
-            f"Override configure_model_metric(stage) to configure a metric for stage '{stage}'."
+            f"Override configure_model_metric(stage: str) to configure a metric for stage '{stage}'."
         )
         return None
 

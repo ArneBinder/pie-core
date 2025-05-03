@@ -79,8 +79,9 @@ TPredictions = TypeVar("TPredictions")
 TTargets = TypeVar("TTargets")
 
 
-class ModelMetric(Generic[TPredictions, TTargets], ABC):
-    """This defines the interface for a model metric.
+class EncodingMetric(Generic[TPredictions, TTargets], ABC):
+    """This defines the interface for a metric that is used to compute score(s) based on (model)
+    predictions and targets (probably in batch form).
 
     It loosely follows the Metric API of torchmetrics.
     """
