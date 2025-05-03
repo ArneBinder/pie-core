@@ -158,7 +158,7 @@ class ModelHFHubMixin(PieBaseHFHubMixin):
 class Model(ModelHFHubMixin, Registrable["Model"]):
 
     def _config(self) -> Dict[str, Any]:
-        config = super().config
+        config = super()._config() or {}
         if self.has_base_class():
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
