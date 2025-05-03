@@ -8,7 +8,6 @@ from huggingface_hub.file_download import hf_hub_download
 
 from pie_core.auto import Auto
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin
-from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
