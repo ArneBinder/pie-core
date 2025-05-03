@@ -15,12 +15,12 @@ from typing import (
     Union,
 )
 
-from pytorch_lightning.core.mixins import HyperparametersMixin
 from tqdm import tqdm
 
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
+from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.metric import EncodingMetric
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
@@ -82,7 +82,7 @@ class TaskModuleHFHubMixin(PieBaseHFHubMixin):
 class TaskModule(
     ABC,
     TaskModuleHFHubMixin,
-    HyperparametersMixin,
+    PieHyperparametersMixin,
     Registrable["TaskModule"],
     WithDocumentTypeMixin,
     PreparableMixin,

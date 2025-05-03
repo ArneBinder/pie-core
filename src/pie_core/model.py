@@ -5,10 +5,10 @@ from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 from huggingface_hub import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
-from pytorch_lightning.core.mixins import HyperparametersMixin
 
 from pie_core.auto import Auto
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin
+from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
