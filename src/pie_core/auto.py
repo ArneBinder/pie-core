@@ -3,6 +3,8 @@ from typing import Generic, Type, TypeVar
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin
 from pie_core.registrable import Registrable
 
+# This is a workaround because T needs to be bound to the intersection of
+# Registrable and PieBaseHFHubMixin which is not possible in Python 3.9
 T = TypeVar("T", bound="Auto")
 
 
