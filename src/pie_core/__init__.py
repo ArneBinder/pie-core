@@ -14,13 +14,5 @@ from pie_core.module_mixins import (
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
 from pie_core.statistic import DocumentStatistic
-from pie_core.taskencoding import (
-    IterableTaskEncodingDataset,
-    TaskEncoding,
-    TaskEncodingDataset,
-    TaskEncodingSequence,
-)
-from pie_core.taskmodule import (
-    AutoTaskModule,
-    TaskModule,
-)
+from pie_core.taskencoding import TaskEncoding, TaskEncodingSequence
+from pie_core.taskmodule import AutoTaskModule, TaskModule
