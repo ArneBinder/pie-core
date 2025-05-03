@@ -448,6 +448,16 @@ class TaskModule(
     def configure_model_metric(
         self, stage: str
     ) -> Optional[EncodingMetric[ModelBatchOutput, TargetBatchEncoding]]:
+        """Configure the model metric. This method is called by the model to configure the metric
+        for the given stage. It will be used to compute the metric score(s) based on the model
+        predictions and targets.
+
+        Args:
+            stage: The stage for which the metric is configured, e.g., "train", "val", "test".
+
+        Returns:
+            The metric for the given stage.
+        """
         logger.warning(
             f"TaskModule {self.__class__.__name__} does not implement a model metric. "
             f"Override configure_model_metric(stage: str) to configure a metric for stage '{stage}'."
