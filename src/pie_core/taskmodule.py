@@ -38,8 +38,9 @@ TargetEncoding = TypeVar("TargetEncoding")
 # TaskEncoding: defined below
 InputBatchEncoding = TypeVar("InputBatchEncoding")
 TargetBatchEncoding = TypeVar("TargetBatchEncoding")
-# TaskBatchEncoding = TypeVar("TaskBatchEncoding")
 # TaskBatchEncoding: TypeAlias = Tuple[InputBatchEncoding, Optional[TargetBatchEncoding]]
+# TODO: remove in favor of InputBatchEncoding and TargetBatchEncoding
+TaskBatchEncoding = TypeVar("TaskBatchEncoding")
 # ModelBatchEncoding: defined in models
 ModelBatchOutput = TypeVar("ModelBatchOutput")
 TaskOutput = TypeVar("TaskOutput")
@@ -89,8 +90,8 @@ class TaskModule(
         DocumentType,
         InputEncoding,
         TargetEncoding,
-        InputBatchEncoding,
-        TargetBatchEncoding,
+        # TODO: replace with InputBatchEncoding and TargetBatchEncoding
+        TaskBatchEncoding,
         ModelBatchOutput,
         TaskOutput,
     ],
