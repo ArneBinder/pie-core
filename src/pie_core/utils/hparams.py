@@ -1,5 +1,10 @@
-# The implementations in this file are taken from the PyTorch Lightning
-# codebase. Here is the original license header:
+# LICENSE Note
+#
+# The implementations in this file are taken from the PyTorch Lightning codebase,
+# specifically from:
+# https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/utilities/parsing.py
+#
+# The original license of the code is as follows:
 #
 # Copyright The Lightning AI team.
 #

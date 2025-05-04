@@ -1,5 +1,10 @@
-# The implementations in this file are taken from the PyTorch Lightning codebase.
-# Here is the original license header:
+# LICENSE Note
+#
+# The implementations in this file are taken from the PyTorch Lightning codebase,
+# specifically from:
+# https://github.com/Lightning-AI/pytorch-lightning/blob/6da480d5e3304b91ac188b849ee06e369e878460/tests/tests_pytorch/models/test_hparams.py
+#
+# The original license of the code is as follows:
 #
 # Copyright The Lightning AI team.
 #
