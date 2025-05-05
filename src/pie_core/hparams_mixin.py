@@ -2,12 +2,13 @@
 # Modifications Copyright © 2025 Arne Binder
 #
 # The original work lives at:
-#     * https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/core/mixins/hparams_mixin.py
-#     * https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/fabric/utilities/data.py
+#     https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/core/mixins/hparams_mixin.py
+#     https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/fabric/utilities/data.py
 #
 # NOTICE — the content has been modified from the original Lightning version:
-#     * HyperparametersMixin is renamed to PieHyperparametersMixin to avoid name clashes.
-#     * Unused methods and imports have been removed.
+#     HyperparametersMixin is renamed to PieHyperparametersMixin to avoid name clashes.
+#     Unused methods and imports have been removed.
+#     All subsequent changes are documented in the project’s Git history.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

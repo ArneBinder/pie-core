@@ -7,6 +7,7 @@
 # NOTICE — the content has been modified from the original Lightning version:
 #     Unused methods and imports have been removed.
 #     The test has been adapted to the renamed PieHyperparametersMixin.
+#     All subsequent changes are documented in the project’s Git history.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
