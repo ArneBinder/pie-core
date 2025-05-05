@@ -81,6 +81,11 @@ pytest --cov --cov-report term-missing
    artefacts and also uploads them to PyPI.
 8. Cleanup: Delete the `release` branch. This is important, because otherwise the next release will fail.
 
+## 📄 License
+
+- **pie-core** is released under the **MIT License** – see [`LICENSE`](LICENSE).
+- Third-party licenses and attributions are listed in [`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
+
 [black]: https://github.com/psf/black
 [codecov]: https://app.codecov.io/gh/arnebinder/pie-core
 [pre-commit]: https://github.com/pre-commit/pre-commit

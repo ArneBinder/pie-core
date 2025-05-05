@@ -10,8 +10,12 @@ authors = ["Arne Binder <arne.binder@dfki.de>"]
 readme = "README.md"
 homepage = "https://github.com/arnebinder/pie-core"
 repository = "https://github.com/arnebinder/pie-core"
+license = "MIT"
 packages = [
     { include = "pie_core", from = "src" },
+]
+include = [
+  { path = "LICENSES/**", format = "sdist" }
 ]
 classifiers = [
     "Framework :: Pytest",
@@ -24,7 +28,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pytorch-lightning = "^2.1.0"
 huggingface_hub = ">=0.23.4,<0.26.0"
 
 [tool.poetry.group.dev.dependencies]
