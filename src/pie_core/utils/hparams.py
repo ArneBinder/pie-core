@@ -1,12 +1,11 @@
-# LICENSE Note
+# Copyright © 2019-2025 The Lightning AI team
+# Modifications Copyright © 2025 Arne Binder
 #
-# The implementations in this file are taken from the PyTorch Lightning codebase,
-# specifically from:
-# https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/utilities/parsing.py
+# The original work lives at:
+#     https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/utilities/parsing.py
 #
-# The original license of the code is as follows:
-#
-# Copyright The Lightning AI team.
+# NOTICE — the content has been modified from the original Lightning version:
+#     Unused methods and imports have been removed.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

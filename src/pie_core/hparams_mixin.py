@@ -1,15 +1,13 @@
-# LICENSE Note
+# Copyright © 2019-2025 The Lightning AI team
+# Modifications Copyright © 2025 Arne Binder
 #
-# The implementations in this file are taken from the PyTorch Lightning codebase,
-# specifically from:
-# https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/core/mixins/hparams_mixin.py
+# The original work lives at:
+#     * https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/pytorch/core/mixins/hparams_mixin.py
+#     * https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/fabric/utilities/data.py
 #
-# Changes: HyperparametersMixin is renamed to PieHyperparametersMixin to avoid
-# conflicts when used in combination with the original PyTorch Lightning implementation.
-#
-# The original license of the code is as follows:
-#
-# Copyright The Lightning AI team.
+# NOTICE — the content has been modified from the original Lightning version:
+#     * HyperparametersMixin is renamed to PieHyperparametersMixin to avoid name clashes.
+#     * Unused methods and imports have been removed.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,13 +29,57 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Optional, Union
 
-from pie_core.utils.dictionary import AttributeDict
 from pie_core.utils.hparams import save_hyperparameters
+
+
+class AttributeDict(dict):
+    """A container to store state variables of your program.
+
+    This is a drop-in replacement for a Python dictionary, with the additional functionality to access and modify keys
+    through attribute lookup for convenience.
+
+    Use this to define the state of your program, then pass it to
+    :meth:`~lightning_fabric.fabric.Fabric.save` and :meth:`~lightning_fabric.fabric.Fabric.load`.
+
+    Example:
+        >>> import torch
+        >>> model = torch.nn.Linear(2, 2)
+        >>> state = AttributeDict(model=model, iter_num=0)
+        >>> state.model
+        Linear(in_features=2, out_features=2, bias=True)
+        >>> state.iter_num += 1
+        >>> state.iter_num
+        1
+        >>> state
+        "iter_num": 1
+        "model":    Linear(in_features=2, out_features=2, bias=True)
+    """
+
+    def __getattr__(self, key: str) -> Any:
+        try:
+            return self[key]
+        except KeyError as e:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'") from e
+
+    def __setattr__(self, key: str, val: Any) -> None:
+        self[key] = val
+
+    def __delattr__(self, item: str) -> None:
+        if item not in self:
+            raise KeyError(item)
+        del self[item]
+
+    def __repr__(self) -> str:
+        if not len(self):
+            return ""
+        max_key_length = max(len(str(k)) for k in self)
+        tmp_name = "{:" + str(max_key_length + 3) + "s} {}"
+        rows = [tmp_name.format(f'"{n}":', self[n]) for n in sorted(self.keys())]
+        return "\n".join(rows)
+
 
 _PRIMITIVE_TYPES = (bool, int, float, str)
 _ALLOWED_CONFIG_TYPES = (AttributeDict, MutableMapping, Namespace)
-
-
 _given_hyperparameters: ContextVar = ContextVar("_given_hyperparameters", default=None)
 
 

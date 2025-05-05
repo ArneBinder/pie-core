@@ -1,25 +1,3 @@
-# LICENSE Note
-#
-# The implementation of `AttributeDict` is taken from the PyTorch Lightning codebase,
-# specifically from:
-# https://github.com/Lightning-AI/pytorch-lightning/blob/2.5.1/src/lightning/fabric/utilities/data.py
-#
-# The original license of the code is as follows:
-#
-# Copyright The Lightning AI team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from typing import (
     Any,
     Dict,
@@ -261,49 +239,3 @@ def dict_update_nested(d: dict, u: dict, override: Optional[TNestedBoolDict] = N
             f"Cannot merge {u} into {d} with override={override} because the "
             f"override contains keys not in the update: {sorted(overrides_not_in_update)}"
         )
-
-
-class AttributeDict(dict):
-    """A container to store state variables of your program.
-
-    This is a drop-in replacement for a Python dictionary, with the additional functionality to access and modify keys
-    through attribute lookup for convenience.
-
-    Use this to define the state of your program, then pass it to
-    :meth:`~lightning_fabric.fabric.Fabric.save` and :meth:`~lightning_fabric.fabric.Fabric.load`.
-
-    Example:
-        >>> import torch
-        >>> model = torch.nn.Linear(2, 2)
-        >>> state = AttributeDict(model=model, iter_num=0)
-        >>> state.model
-        Linear(in_features=2, out_features=2, bias=True)
-        >>> state.iter_num += 1
-        >>> state.iter_num
-        1
-        >>> state
-        "iter_num": 1
-        "model":    Linear(in_features=2, out_features=2, bias=True)
-    """
-
-    def __getattr__(self, key: str) -> Any:
-        try:
-            return self[key]
-        except KeyError as e:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'") from e
-
-    def __setattr__(self, key: str, val: Any) -> None:
-        self[key] = val
-
-    def __delattr__(self, item: str) -> None:
-        if item not in self:
-            raise KeyError(item)
-        del self[item]
-
-    def __repr__(self) -> str:
-        if not len(self):
-            return ""
-        max_key_length = max(len(str(k)) for k in self)
-        tmp_name = "{:" + str(max_key_length + 3) + "s} {}"
-        rows = [tmp_name.format(f'"{n}":', self[n]) for n in sorted(self.keys())]
-        return "\n".join(rows)

@@ -1,12 +1,12 @@
-# LICENSE Note
+# Copyright © 2019-2025 The Lightning AI team
+# Modifications Copyright © 2025 Arne Binder
 #
-# The implementations in this file are taken from the PyTorch Lightning codebase,
-# specifically from:
-# https://github.com/Lightning-AI/pytorch-lightning/blob/6da480d5e3304b91ac188b849ee06e369e878460/tests/tests_pytorch/models/test_hparams.py
+# The original work lives at:
+#     https://github.com/Lightning-AI/pytorch-lightning/blob/6da480d5e3304b91ac188b849ee06e369e878460/tests/tests_pytorch/models/test_hparams.py
 #
-# The original license of the code is as follows:
-#
-# Copyright The Lightning AI team.
+# NOTICE — the content has been modified from the original Lightning version:
+#     Unused methods and imports have been removed.
+#     The test has been adapted to the renamed PieHyperparametersMixin.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
