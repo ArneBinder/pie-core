@@ -83,9 +83,8 @@ pytest --cov --cov-report term-missing
 
 ## 📄 License
 
-* **pie-core** is released under the **MIT License** – see [`LICENSE`](LICENSE).
-* Third-party licenses and attributions are listed in [`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
-
+- **pie-core** is released under the **MIT License** – see [`LICENSE`](LICENSE).
+- Third-party licenses and attributions are listed in [`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
 
 [black]: https://github.com/psf/black
 [codecov]: https://app.codecov.io/gh/arnebinder/pie-core
