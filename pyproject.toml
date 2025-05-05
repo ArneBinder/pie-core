@@ -14,6 +14,9 @@ license = "MIT"
 packages = [
     { include = "pie_core", from = "src" },
 ]
+include = [
+  { path = "LICENSES/**", format = "sdist" }
+]
 classifiers = [
     "Framework :: Pytest",
     "Programming Language :: Python",
