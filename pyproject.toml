@@ -10,6 +10,7 @@ authors = ["Arne Binder <arne.binder@dfki.de>"]
 readme = "README.md"
 homepage = "https://github.com/arnebinder/pie-core"
 repository = "https://github.com/arnebinder/pie-core"
+license = "MIT"
 packages = [
     { include = "pie_core", from = "src" },
 ]
