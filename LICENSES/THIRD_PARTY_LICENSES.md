@@ -1,6 +1,6 @@
 # Third-party code
 
-- Parts of `pie-core` reuse code from [PyTorch Lightning](https://github.com/Lightning-AI/pytorch-lightning)
+- Parts of `pie-core` reuse code from [PyTorch Lightning](https://github.com/Lightning-AI/pytorch-lightning).
   Copyright © 2019-2025 The Lightning AI team, licensed under the [Apache License 2.0](PYTORCH-LIGHTNING).
   Specifically, contents of the following files:
   - [hparams_mixin.py](src/pie_core/hparams_mixin.py),
