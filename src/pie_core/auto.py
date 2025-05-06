@@ -11,7 +11,7 @@ class RegistrableBaseHFHubProtocol(RegistrableProtocol, HFHubProtocol, Protocol)
 T = TypeVar("T", bound=RegistrableBaseHFHubProtocol)
 
 
-class Auto(Registrable[T], HFHubMixin, Generic[T]):
+class Auto(HFHubMixin, Registrable[T], Generic[T]):
 
     @classmethod
     def from_config(cls, config: dict, **kwargs) -> T:  # type: ignore
