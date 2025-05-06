@@ -7,7 +7,7 @@ from huggingface_hub import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
 
 from pie_core.auto import Auto
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin
+from pie_core.hf_hub_mixin import HFHubMixin
 from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 TModelHFHubMixin = TypeVar("TModelHFHubMixin", bound="ModelHFHubMixin")
 
 
-class ModelHFHubMixin(PieBaseHFHubMixin):
+class ModelHFHubMixin(HFHubMixin):
     config_name = CONFIG_NAME
     config_type_key = "model_type"
     weights_file_name = PYTORCH_WEIGHTS_NAME
@@ -172,7 +172,6 @@ class Model(ModelHFHubMixin, Registrable["Model"]):
         return config
 
 
-# ignore the typing error, see T in auto.py for details
-class AutoModel(ModelHFHubMixin, Auto[Model]):  # type: ignore
+class AutoModel(ModelHFHubMixin, Auto[Model]):
 
     BASE_CLASS = Model

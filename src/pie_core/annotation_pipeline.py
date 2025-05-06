@@ -15,7 +15,7 @@ from typing import (
 
 from pie_core.auto import Auto
 from pie_core.document import Document
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin
+from pie_core.hf_hub_mixin import HFHubMixin
 from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.model import AutoModel, Model
 from pie_core.registrable import Registrable
@@ -29,7 +29,7 @@ TAnnotationPipelineHFHubMixin = TypeVar(
 )
 
 
-class AnnotationPipelineHFHubMixin(PieBaseHFHubMixin):
+class AnnotationPipelineHFHubMixin(HFHubMixin):
     config_name = "pipeline_config.json"
     config_type_key = "pipeline_type"
     auto_model_class = AutoModel
@@ -234,7 +234,6 @@ class AnnotationPipeline(
     ) -> Union[Document, Sequence[Document]]: ...
 
 
-# ignore the typing error, see T in auto.py for details
-class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):  # type: ignore
+class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
 
     BASE_CLASS = AnnotationPipeline
