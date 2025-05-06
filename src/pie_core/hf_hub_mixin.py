@@ -14,17 +14,10 @@ from pie_core.utils.dictionary import TNestedBoolDict, dict_update_nested
 logger = logging.getLogger(__name__)
 
 
-# Generic variable that is either PieBaseHFHubMixin or a subclass thereof
-T = TypeVar("T", bound="PieBaseHFHubProtocol")
+T = TypeVar("T", bound="HFHubProtocol")
 
 
-class PieBaseHFHubProtocol(Protocol):
-    """A generic mixin to integrate ANY machine learning framework with the Hub.
-
-    To integrate your framework, your model class must inherit from this class. Custom logic for saving/loading models
-    have to be overwritten in  [`_from_pretrained`] and [`_save_pretrained`]. [`PyTorchModelHubMixin`] is a good example
-    of mixin integration with the Hub. Check out our [integration guide](../guides/integrations) for more instructions.
-    """
+class HFHubProtocol(Protocol):
 
     config_name: str = "not_implemented.json"
     config_type_key: str = "not_implemented"
@@ -364,7 +357,7 @@ class PieBaseHFHubProtocol(Protocol):
         return cls(**config)
 
 
-class PieBaseHFHubMixin(PieBaseHFHubProtocol):
+class PieBaseHFHubMixin(HFHubProtocol):
 
     def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
         super().__init__(*args, **kwargs)

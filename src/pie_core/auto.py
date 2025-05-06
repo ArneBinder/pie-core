@@ -1,10 +1,10 @@
 from typing import Generic, Protocol, Type, TypeVar
 
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin, PieBaseHFHubProtocol
+from pie_core.hf_hub_mixin import HFHubProtocol, PieBaseHFHubMixin
 from pie_core.registrable import Registrable, RegistrableProtocol
 
 
-class RegistrableBaseHFHubProtocol(RegistrableProtocol, PieBaseHFHubProtocol, Protocol):
+class RegistrableBaseHFHubProtocol(RegistrableProtocol, HFHubProtocol, Protocol):
     pass
 
 
