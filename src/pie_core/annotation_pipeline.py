@@ -14,11 +14,11 @@ from typing import (
 )
 
 from pie_core.auto import Auto
+from pie_core.common import RegistrableBaseHFHubMixin
 from pie_core.document import Document
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin
 from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.model import AutoModel, Model
-from pie_core.registrable import Registrable
 from pie_core.taskmodule import AutoTaskModule, TaskModule
 
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ TTaskModule = TypeVar("TTaskModule", bound="TaskModule")
 class AnnotationPipeline(
     AnnotationPipelineHFHubMixin,
     PieHyperparametersMixin,
-    Registrable["AnnotationPipeline"],
+    RegistrableBaseHFHubMixin["AnnotationPipeline"],
     Generic[TModel, TTaskModule],
     ABC,
 ):
@@ -234,7 +234,6 @@ class AnnotationPipeline(
     ) -> Union[Document, Sequence[Document]]: ...
 
 
-# ignore the typing error, see T in auto.py for details
-class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):  # type: ignore
+class AutoAnnotationPipeline(AnnotationPipelineHFHubMixin, Auto[AnnotationPipeline]):
 
     BASE_CLASS = AnnotationPipeline

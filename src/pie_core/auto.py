@@ -1,21 +1,20 @@
-from typing import Generic, Type, TypeVar
+from typing import Type, TypeVar
 
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin
-from pie_core.registrable import Registrable
+from pie_core.common import RegistrableBaseHFHubMixin
 
-# This is a workaround because T needs to be bound to the intersection of
-# Registrable and PieBaseHFHubMixin which is not possible in Python 3.9
-T = TypeVar("T", bound="Auto")
+T = TypeVar("T", bound=RegistrableBaseHFHubMixin)
 
 
-class Auto(PieBaseHFHubMixin, Registrable[T], Generic[T]):
+class Auto(RegistrableBaseHFHubMixin[T]):
 
     @classmethod
-    def from_config(cls: Type[T], config: dict, **kwargs) -> T:
-        """Build a task module from a config dict."""
+    def from_config(cls, config: dict, **kwargs) -> T:  # type: ignore
         config = config.copy()
         class_name = config.pop(cls.config_type_key)
-        # the class name may be overridden by the kwargs
+        # The class name may be overridden by the kwargs.
         class_name = kwargs.pop(cls.config_type_key, class_name)
+        # The returned class should not be an instance of Auto
+        # which introduces a return type mismatch. This is fine,
+        # so we ignore it (see method signature).
         clazz: Type[T] = cls.base_class().by_name(class_name)
         return clazz._from_config(config, **kwargs)

@@ -18,13 +18,13 @@ from typing import (
 from tqdm import tqdm
 
 from pie_core.auto import Auto
+from pie_core.common import RegistrableBaseHFHubMixin
 from pie_core.document import Annotation, Document
 from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
 from pie_core.hparams_mixin import PieHyperparametersMixin
 from pie_core.metric import EncodingMetric
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
-from pie_core.registrable import Registrable
 from pie_core.taskencoding import (
     IterableTaskEncodingDataset,
     TaskEncoding,
@@ -83,7 +83,7 @@ class TaskModule(
     ABC,
     TaskModuleHFHubMixin,
     PieHyperparametersMixin,
-    Registrable["TaskModule"],
+    RegistrableBaseHFHubMixin["TaskModule"],
     WithDocumentTypeMixin,
     PreparableMixin,
     Generic[
@@ -465,7 +465,6 @@ class TaskModule(
         return None
 
 
-# ignore the typing error, see T in auto.py for details
-class AutoTaskModule(TaskModuleHFHubMixin, Auto[TaskModule]):  # type: ignore
+class AutoTaskModule(TaskModuleHFHubMixin, Auto[TaskModule]):
 
     BASE_CLASS = TaskModule
