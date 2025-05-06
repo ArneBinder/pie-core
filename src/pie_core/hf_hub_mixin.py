@@ -357,7 +357,7 @@ class HFHubProtocol(Protocol):
         return cls(**config)
 
 
-class PieBaseHFHubMixin(HFHubProtocol):
+class HFHubMixin(HFHubProtocol):
 
     def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
         super().__init__(*args, **kwargs)

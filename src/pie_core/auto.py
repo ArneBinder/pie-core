@@ -1,6 +1,6 @@
 from typing import Generic, Protocol, Type, TypeVar
 
-from pie_core.hf_hub_mixin import HFHubProtocol, PieBaseHFHubMixin
+from pie_core.hf_hub_mixin import HFHubMixin, HFHubProtocol
 from pie_core.registrable import Registrable, RegistrableProtocol
 
 
@@ -11,7 +11,7 @@ class RegistrableBaseHFHubProtocol(RegistrableProtocol, HFHubProtocol, Protocol)
 T = TypeVar("T", bound=RegistrableBaseHFHubProtocol)
 
 
-class Auto(Registrable[T], PieBaseHFHubMixin, Generic[T]):
+class Auto(Registrable[T], HFHubMixin, Generic[T]):
 
     @classmethod
     def from_config(cls, config: dict, **kwargs) -> T:  # type: ignore
