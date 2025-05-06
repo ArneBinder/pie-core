@@ -1,11 +1,17 @@
-from typing import Type, TypeVar
+from typing import Generic, Protocol, Type, TypeVar
 
-from pie_core.common import RegistrableBaseHFHubMixin
+from pie_core.hf_hub_mixin import PieBaseHFHubMixin, PieBaseHFHubProtocol
+from pie_core.registrable import Registrable, RegistrableProtocol
 
-T = TypeVar("T", bound=RegistrableBaseHFHubMixin)
+
+class RegistrableBaseHFHubProtocol(RegistrableProtocol, PieBaseHFHubProtocol, Protocol):
+    pass
 
 
-class Auto(RegistrableBaseHFHubMixin[T]):
+T = TypeVar("T", bound=RegistrableBaseHFHubProtocol)
+
+
+class Auto(Registrable[T], PieBaseHFHubMixin, Generic[T]):
 
     @classmethod
     def from_config(cls, config: dict, **kwargs) -> T:  # type: ignore
