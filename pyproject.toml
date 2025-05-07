@@ -31,21 +31,14 @@ python = "^3.9"
 huggingface_hub = ">=0.23.4,<0.26.0"
 
 [tool.poetry.group.dev.dependencies]
-torch = {version = "^2.1.0+cpu", source = "pytorch"}
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
 pre-commit = "^3.4.0"
 
 [[tool.poetry.source]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "explicit"
-
-[[tool.poetry.source]]
 name = "pre-release"
 url = "https://test.pypi.org/simple/"
 priority = "explicit"
-
 
 [tool.pytest.ini_options]
 addopts = [
