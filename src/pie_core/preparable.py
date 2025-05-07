@@ -3,8 +3,12 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+PREPARED_ATTRIBUTES: List[str] = []
+
 
 class PreparableMixin:
+    """Mixin for preparable classes."""
+
     # list of attribute names that need to be set by _prepare()
     PREPARED_ATTRIBUTES: List[str] = []
 
@@ -21,7 +25,7 @@ class PreparableMixin:
     @property
     def prepared_attributes(self) -> Dict[str, Any]:
         if not self.is_prepared:
-            raise Exception("The module is not prepared.")
+            raise Exception(f"The {self.__class__.__name__} is not prepared.")
         return {param: getattr(self, param) for param in self.PREPARED_ATTRIBUTES}
 
     def _prepare(self, *args, **kwargs) -> None:
@@ -38,7 +42,7 @@ class PreparableMixin:
                 param for param in self.PREPARED_ATTRIBUTES if getattr(self, param, None) is None
             ]
             raise Exception(
-                f"{msg or ''} Required attributes that are not set: {str(attributes_not_prepared)}"
+                f"{'' if not msg else msg + ' '}Required attributes that are not set: {str(attributes_not_prepared)}"
             )
 
     def post_prepare(self) -> None:
