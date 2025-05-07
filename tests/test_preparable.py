@@ -62,11 +62,13 @@ def test_post_prepare(prepared_object, unprepared_object, caplog):
     assert str(excinfo.value) == "Required attributes that are not set: ['attr']"
 
 
-def test_prepare():
+def test_prepare(caplog):
     obj = PreparableObject()
     assert not obj.is_prepared
-    obj.prepare()
+    with caplog.at_level(logging.INFO):
+        obj.prepare()
     assert obj.is_prepared
+    assert "Post-prepared successfully!" in caplog.text
 
 
 def test_prepare_prepared_object(prepared_object, caplog):
