@@ -360,7 +360,10 @@ class HFHubProtocol(Protocol):
 class HFHubMixin(HFHubProtocol):
 
     def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
-        super().__init__(*args, **kwargs)
+        # skip the __init__ of HFHubProtocol: this would interrupt the
+        # constructor chain and disallow passing the args and kwargs to
+        # any other class in the case of multiple inheritance
+        super(HFHubProtocol, self).__init__(*args, **kwargs)
         self._is_from_pretrained = is_from_pretrained
 
     @property

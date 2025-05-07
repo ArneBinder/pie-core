@@ -91,4 +91,8 @@ class Registrable(RegistrableProtocol[T]):
     a dictionary mapping class names to classes.
     """
 
-    pass
+    def __init__(self, *args, **kwargs):
+        # skip the __init__ of RegistrableProtocol: this would interrupt the
+        # constructor chain and disallow passing the args and kwargs to
+        # any other class in the case of multiple inheritance
+        super(RegistrableProtocol, self).__init__(*args, **kwargs)
