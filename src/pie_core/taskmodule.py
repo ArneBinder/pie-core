@@ -15,13 +15,13 @@ from typing import (
     Union,
 )
 
-from pytorch_lightning.core.mixins import HyperparametersMixin
-from torchmetrics import Metric
 from tqdm import tqdm
 
 from pie_core.auto import Auto
 from pie_core.document import Annotation, Document
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin, TNestedBoolDict
+from pie_core.hf_hub_mixin import HFHubMixin, TNestedBoolDict
+from pie_core.hparams_mixin import PieHyperparametersMixin
+from pie_core.metric import EncodingMetric
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
@@ -36,6 +36,10 @@ DocumentType = TypeVar("DocumentType", bound=Document)
 InputEncoding = TypeVar("InputEncoding")
 TargetEncoding = TypeVar("TargetEncoding")
 # TaskEncoding: defined below
+InputBatchEncoding = TypeVar("InputBatchEncoding")
+TargetBatchEncoding = TypeVar("TargetBatchEncoding")
+# TaskBatchEncoding: TypeAlias = Tuple[InputBatchEncoding, Optional[TargetBatchEncoding]]
+# TODO: remove in favor of InputBatchEncoding and TargetBatchEncoding
 TaskBatchEncoding = TypeVar("TaskBatchEncoding")
 # ModelBatchEncoding: defined in models
 ModelBatchOutput = TypeVar("ModelBatchOutput")
@@ -47,7 +51,7 @@ logger = logging.getLogger(__name__)
 TTaskModuleHFHubMixin = TypeVar("TTaskModuleHFHubMixin", bound="TaskModuleHFHubMixin")
 
 
-class TaskModuleHFHubMixin(PieBaseHFHubMixin):
+class TaskModuleHFHubMixin(HFHubMixin):
     config_name = "taskmodule_config.json"
     config_type_key = "taskmodule_type"
 
@@ -78,7 +82,7 @@ class TaskModuleHFHubMixin(PieBaseHFHubMixin):
 class TaskModule(
     ABC,
     TaskModuleHFHubMixin,
-    HyperparametersMixin,
+    PieHyperparametersMixin,
     Registrable["TaskModule"],
     WithDocumentTypeMixin,
     PreparableMixin,
@@ -86,6 +90,7 @@ class TaskModule(
         DocumentType,
         InputEncoding,
         TargetEncoding,
+        # TODO: replace with InputBatchEncoding and TargetBatchEncoding
         TaskBatchEncoding,
         ModelBatchOutput,
         TaskOutput,
@@ -440,10 +445,22 @@ class TaskModule(
     ) -> TaskBatchEncoding:
         pass
 
-    def configure_model_metric(self, stage: str) -> Optional[Metric]:
+    def configure_model_metric(
+        self, stage: str
+    ) -> Optional[EncodingMetric[ModelBatchOutput, TargetBatchEncoding]]:
+        """Configure the model metric. This method is called by the model to configure the metric
+        for the given stage. It will be used to compute the metric score(s) based on the model
+        predictions and targets.
+
+        Args:
+            stage: The stage for which the metric is configured, e.g., "train", "val", "test".
+
+        Returns:
+            The metric for the given stage.
+        """
         logger.warning(
             f"TaskModule {self.__class__.__name__} does not implement a model metric. "
-            f"Override configure_model_metric(stage) to configure a metric for stage '{stage}'."
+            f"Override configure_model_metric(stage: str) to configure a metric for stage '{stage}'."
         )
         return None
 

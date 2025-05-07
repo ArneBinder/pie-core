@@ -2,6 +2,7 @@ import pytest
 
 from pie_core.utils.dictionary import (
     dict_of_lists2list_of_dicts,
+    dict_update_nested,
     flatten_dict,
     flatten_dict_s,
     list_of_dicts2dict_of_lists,
@@ -170,4 +171,63 @@ def test_unflatten_dict_s_multiple_roots():
     assert (
         str(excinfo.value)
         == "Conflict at path ('a',): trying to overwrite existing dict with a non-dict value."
+    )
+
+
+def test_dict_update_nested():
+
+    # simple cases from docstring
+    d = {"a": 1}
+    u = {"b": 2}
+    dict_update_nested(d, u, True)
+    d == u == {"b": 2}
+
+    d = {"a": 1}
+    u = {"b": 2}
+    dict_update_nested(d, u, False)
+    d == u == {"a": 1}
+
+    d = {"a": {"b": {"c": 1, "d": 2}, "e": {"f": 3}}, "g": 4}
+    u = {"a": {"b": {"c": 5}, "e": 6}, "g": {"h": 7}}
+    dict_update_nested(d, u)
+    assert d == {"a": {"b": {"c": 5, "d": 2}, "e": 6}, "g": {"h": 7}}
+
+    d = {"a": {"b": {"c": 1}, "d": {"e": 2}}, "f": 3}
+    u = {"a": {"b": {"c": 3}, "d": {"e": 4}}, "f": 4}
+    override = {"a": {"b": True, "d": False}}
+    dict_update_nested(d, u, override)
+    assert d == {"a": {"b": {"c": 3}, "d": {"e": 2}}, "f": 4}
+
+    # Override dicts
+    # Multiple overrides; override for non-dict value
+    d = {"a": {"b": {"c": 1}}, "d": 2, "e": 3}
+    u = {"a": {"b": {"c": 3}}, "d": 4, "f": 5}
+    override = {"a": {"b": True}, "d": False}
+    dict_update_nested(d, u, override)
+    assert d == {"a": {"b": {"c": 3}}, "d": 2, "e": 3, "f": 5}
+
+    # More nested override
+    d = {"a": {"b": {"c": {"d": 1}}}}
+    u = {"a": {"b": {"c": {"d": 2}}}}
+    override = {"a": {"b": {"c": False}}}
+    dict_update_nested(d, u, override)
+    assert d == {"a": {"b": {"c": {"d": 1}}}}
+
+    # Override for multiple targets
+    d = {"a": {"b": {"c": {"d": 1}, "e": {"f": 2}}}}
+    u = {"a": {"b": {"c": {"d": 3}, "e": {"f": 4}}}}
+    override = {"a": {"b": {"c": True, "e": {"f": False}}}}
+    dict_update_nested(d, u, override)
+    assert d == {"a": {"b": {"c": {"d": 3}, "e": {"f": 2}}}}
+
+    # Override target not in update
+    d = {"a": {"b": 1}}
+    u = {"a": {"c": 1}}
+    override = {"a": {"b": True}}
+    with pytest.raises(ValueError) as excinfo:
+        dict_update_nested(d, u, override)
+    assert (
+        str(excinfo.value)
+        == "Cannot merge {'c': 1} into {'b': 1, 'c': 1} with override={'b': True} "
+        "because the override contains keys not in the update: ['b']"
     )

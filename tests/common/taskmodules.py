@@ -9,9 +9,9 @@ workflow:
 
 import dataclasses
 import logging
+import math
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TypedDict
 
-import numpy as np
 from typing_extensions import TypeAlias
 
 from pie_core import AnnotationLayer, TaskEncoding, TaskModule, annotation_field
@@ -58,7 +58,7 @@ TaskModuleType: TypeAlias = TaskModule[
 def softmax(scores: List[float]) -> List[float]:
     """Compute the softmax of a list of scores."""
     max_score = max(scores)
-    exp_scores = [np.exp(score - max_score) for score in scores]
+    exp_scores = [math.exp(score - max_score) for score in scores]
     sum_exp_scores = sum(exp_scores)
     return [score / sum_exp_scores for score in exp_scores]
 

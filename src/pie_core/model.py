@@ -5,10 +5,9 @@ from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 from huggingface_hub import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
-from pytorch_lightning.core.mixins import HyperparametersMixin
 
 from pie_core.auto import Auto
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin
+from pie_core.hf_hub_mixin import HFHubMixin
 from pie_core.registrable import Registrable
 
 logger = logging.getLogger(__name__)
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 TModelHFHubMixin = TypeVar("TModelHFHubMixin", bound="ModelHFHubMixin")
 
 
-class ModelHFHubMixin(PieBaseHFHubMixin):
+class ModelHFHubMixin(HFHubMixin):
     config_name = CONFIG_NAME
     config_type_key = "model_type"
     weights_file_name = PYTORCH_WEIGHTS_NAME
@@ -155,7 +154,7 @@ class ModelHFHubMixin(PieBaseHFHubMixin):
         return model
 
 
-class Model(ModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
+class Model(ModelHFHubMixin, Registrable["Model"]):
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
@@ -169,8 +168,7 @@ class Model(ModelHFHubMixin, HyperparametersMixin, Registrable["Model"]):
                 " @Model.register() or @Model.register(name='...') to register it at as a Model"
                 " which will allow to load it via AutoModel."
             )
-        # add all hparams
-        config.update(self.hparams)
+
         return config
 
 
