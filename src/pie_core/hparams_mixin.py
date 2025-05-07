@@ -87,8 +87,8 @@ _given_hyperparameters: ContextVar = ContextVar("_given_hyperparameters", defaul
 class PieHyperparametersMixin:
     __jit_unused_properties__: list[str] = ["hparams", "hparams_initial"]
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._log_hyperparams = False
 
     def save_hyperparameters(
