@@ -7,7 +7,12 @@ PREPARED_ATTRIBUTES: List[str] = []
 
 
 class PreparableMixin:
-    """Mixin for preparable classes."""
+    """Mixin for preparable classes.
+
+    To use it, your class must inherit from this class.
+    All attributes that must exist after `prepare` call should be listed in [`PREPARED_ATTRIBUTES`].
+    Custom functions to prepare/post-prepare have to be overwritten in [`_prepare`] and [`_post_prepare`].
+    """
 
     # list of attribute names that need to be set by _prepare()
     PREPARED_ATTRIBUTES: List[str] = []
