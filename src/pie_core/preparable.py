@@ -9,9 +9,15 @@ PREPARED_ATTRIBUTES: List[str] = []
 class PreparableMixin:
     """Mixin for preparable classes.
 
-    To use it, your class must inherit from this class.
-    All attributes that must exist after `prepare` call should be listed in [`PREPARED_ATTRIBUTES`].
-    Custom functions to prepare/post-prepare have to be overwritten in [`_prepare`] and [`_post_prepare`].
+    Provides common function to prepare class attributes and make sure they are set.
+
+    Usage:
+
+    - List all attributes that must exist after `prepare()` call in [`PREPARED_ATTRIBUTES`].
+    - Override `_prepare()` method for custom preparation.
+    - Override `_post_prepare()` method for further preparation steps that need prepared attributes.
+    - `post_prepare()` is called within `prepare()`, but you may want to call it manually if object is created
+    without prepare() (e.g. loaded from config file with all needed attributes).
     """
 
     # list of attribute names that need to be set by _prepare()
