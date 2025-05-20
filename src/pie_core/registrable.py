@@ -1,17 +1,17 @@
 import inspect
 from collections import defaultdict
-from typing import Callable, Dict, Generic, Optional, Type, TypeVar
+from typing import Callable, Dict, Optional, Protocol, Type, TypeVar
 
 
 class RegistrationError(Exception):
     pass
 
 
-T = TypeVar("T", bound="Registrable")
-T2 = TypeVar("T2", bound="Registrable")
+T = TypeVar("T", bound="RegistrableProtocol")
+T2 = TypeVar("T2", bound="RegistrableProtocol")
 
 
-class Registrable(Generic[T2]):
+class RegistrableProtocol(Protocol[T2]):
     BASE_CLASS: Optional[Type[T2]] = None
     _registry: Dict[Type, Dict[str, Type]] = defaultdict(dict)
 
@@ -42,7 +42,7 @@ class Registrable(Generic[T2]):
             )
         cls.BASE_CLASS = cls
 
-        registry = Registrable._registry[cls]
+        registry = RegistrableProtocol._registry[cls]
 
         def add_subclass_to_registry(subclass: Type[T]) -> Type[T]:
             register_name = subclass.__name__ if name is None else name
@@ -66,14 +66,14 @@ class Registrable(Generic[T2]):
 
     @classmethod
     def by_name(cls: Type[T], name: str) -> Type[T]:
-        if name in Registrable._registry[cls]:
-            return Registrable._registry[cls][name]
+        if name in RegistrableProtocol._registry[cls]:
+            return RegistrableProtocol._registry[cls][name]
 
         raise RegistrationError(f"{name} is not a registered name for {cls.__name__}.")
 
     @classmethod
     def registered_name_for_class(cls: Type[T], clazz: Type[T]) -> Optional[str]:
-        inverse_lookup = {v: k for k, v in Registrable._registry[cls].items()}
+        inverse_lookup = {v: k for k, v in RegistrableProtocol._registry[cls].items()}
         return inverse_lookup.get(clazz)
 
     @classmethod
@@ -81,3 +81,18 @@ class Registrable(Generic[T2]):
         obj_class = obj.__class__
         registered_name = cls.registered_name_for_class(obj_class)
         return registered_name if registered_name is not None else obj_class.__name__
+
+
+class Registrable(RegistrableProtocol[T]):
+    """A class that can be registered and instantiated by name.
+
+    This class is used to create a registry of classes that can be instantiated
+    by name. The registry is stored in the class variable `_registry`, which is
+    a dictionary mapping class names to classes.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # skip the __init__ of RegistrableProtocol: this would interrupt the
+        # constructor chain and disallow passing the args and kwargs to
+        # any other class in the case of multiple inheritance
+        super(RegistrableProtocol, self).__init__(*args, **kwargs)

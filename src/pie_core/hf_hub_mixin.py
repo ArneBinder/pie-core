@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import requests
 from huggingface_hub.file_download import hf_hub_download
@@ -14,28 +14,13 @@ from pie_core.utils.dictionary import TNestedBoolDict, dict_update_nested
 logger = logging.getLogger(__name__)
 
 
-# Generic variable that is either PieBaseHFHubMixin or a subclass thereof
-T = TypeVar("T", bound="PieBaseHFHubMixin")
+T = TypeVar("T", bound="HFHubProtocol")
 
 
-class PieBaseHFHubMixin:
-    """A generic mixin to integrate ANY machine learning framework with the Hub.
+class HFHubProtocol(Protocol):
 
-    To integrate your framework, your model class must inherit from this class. Custom logic for saving/loading models
-    have to be overwritten in  [`_from_pretrained`] and [`_save_pretrained`]. [`PyTorchModelHubMixin`] is a good example
-    of mixin integration with the Hub. Check out our [integration guide](../guides/integrations) for more instructions.
-    """
-
-    config_name = "not_implemented.json"
-    config_type_key = "not_implemented"
-
-    def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._is_from_pretrained = is_from_pretrained
-
-    @property
-    def is_from_pretrained(self) -> bool:
-        return self._is_from_pretrained
+    config_name: str = "not_implemented.json"
+    config_type_key: str = "not_implemented"
 
     def _config(self) -> Optional[Dict[str, Any]]:
         return None
@@ -370,3 +355,17 @@ class PieBaseHFHubMixin:
         config = config.copy()
         dict_update_nested(config, kwargs, override=config_override)
         return cls(**config)
+
+
+class HFHubMixin(HFHubProtocol):
+
+    def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
+        # skip the __init__ of HFHubProtocol: this would interrupt the
+        # constructor chain and disallow passing the args and kwargs to
+        # any other class in the case of multiple inheritance
+        super(HFHubProtocol, self).__init__(*args, **kwargs)
+        self._is_from_pretrained = is_from_pretrained
+
+    @property
+    def is_from_pretrained(self) -> bool:
+        return self._is_from_pretrained
