@@ -1,44 +1,51 @@
-from typing import Any, Dict, List, Optional, Type, Union
+from dataclasses import dataclass
 
 import pytest
-from pytorch_ie import DatasetDict
-from transformers import AutoTokenizer, PreTrainedTokenizer
 
-from pie_core import Document, DocumentStatistic
+from pie_core import (
+    AnnotationLayer,
+    Document,
+    DocumentStatistic,
+    annotation_field,
+)
+from tests.common.types import LabeledSpan, TextBasedDocument
 
 
-class TokenCountCollector(DocumentStatistic):
+@pytest.fixture
+def documents():
+    @dataclass
+    class TextDocumentWithEntities(TextBasedDocument):
+        entities: AnnotationLayer[LabeledSpan] = annotation_field(target="text")
 
-    def __init__(
-        self,
-        tokenizer: Union[str, PreTrainedTokenizer],
-        text_field: str,
-        tokenizer_kwargs: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.tokenizer = (
-            AutoTokenizer.from_pretrained(tokenizer) if isinstance(tokenizer, str) else tokenizer
-        )
-        self.tokenizer_kwargs = tokenizer_kwargs or {}
-        self.text_field = text_field
+    # a test sentence with two entities
+    doc1 = TextDocumentWithEntities(
+        text="The quick brown fox jumps over the lazy dog.",
+    )
+    doc1.entities.append(LabeledSpan(start=4, end=19, label="animal"))
+    doc1.entities.append(LabeledSpan(start=35, end=43, label="animal"))
+    assert str(doc1.entities[0]) == "quick brown fox"
+    assert str(doc1.entities[1]) == "lazy dog"
+
+    # a second test sentence with a different text and a single entity (a company)
+    doc2 = TextDocumentWithEntities(text="Apple is a great company.")
+    doc2.entities.append(LabeledSpan(start=0, end=5, label="company"))
+    assert str(doc2.entities[0]) == "Apple"
+
+    documents = [doc1, doc2]
+
+    return documents
+
+
+class WordCountCollector(DocumentStatistic):
+
+    def __init__(self):
+        super().__init__()
 
     def _collect(self, doc: Document) -> int:
-        text = getattr(doc, self.text_field)
-        encodings = self.tokenizer(text, **self.tokenizer_kwargs)
-        tokens = encodings.tokens()
-        return len(tokens)
+        return len(doc.text)
 
 
-dataset = DatasetDict.load_dataset("pie/conll2003")
-statistic = TokenCountCollector(
-    text_field="text",
-    tokenizer="bert-base-uncased",
-    tokenizer_kwargs=dict(add_special_tokens=False),
-)
-values = statistic(dataset)
-assert values == {
-    "train": {"mean": 17.950502100989958, "std": 13.016237876955675, "min": 1, "max": 162},
-    "validation": {"mean": 19.368307692307692, "std": 14.583363922289669, "min": 1, "max": 144},
-    "test": {"mean": 16.774978279756734, "std": 13.176981022988947, "min": 1, "max": 138},
-}
+def test_TokenCountCollector(documents):
+    statistic = WordCountCollector()
+    values = statistic(documents)
+    assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
