@@ -38,14 +38,14 @@ def documents():
 
 class WordCountCollector(DocumentStatistic):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def _collect(self, doc: Document) -> int:
         return len(doc.text)
 
 
-def test_TokenCountCollector(documents):
+def test_WordCountCollector(documents):
     statistic = WordCountCollector()
     values = statistic(documents)
     assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
