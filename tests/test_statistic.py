@@ -49,3 +49,9 @@ def test_WordCountCollector(documents):
     statistic = WordCountCollector()
     values = statistic(documents)
     assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
+
+
+def test_median_aggregated_function(documents):
+    statistic = WordCountCollector(aggregation_functions=["median"])
+    values = statistic(documents)
+    assert values == {"median": 44}
