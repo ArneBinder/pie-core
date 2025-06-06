@@ -36,22 +36,19 @@ def documents():
     return documents
 
 
-class WordCountCollector(DocumentStatistic):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class TextLengthCountCollector(DocumentStatistic):
 
     def _collect(self, doc: Document) -> int:
         return len(doc.text)
 
 
-def test_WordCountCollector(documents):
-    statistic = WordCountCollector()
+def test_TextLengthCountCollector(documents):
+    statistic = TextLengthCountCollector()
     values = statistic(documents)
     assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
 
 
 def test_median_aggregated_function(documents):
-    statistic = WordCountCollector(aggregation_functions=["median"])
+    statistic = TextLengthCountCollector(aggregation_functions=["median"])
     values = statistic(documents)
     assert values == {"median": 44}
