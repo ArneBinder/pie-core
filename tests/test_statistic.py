@@ -76,3 +76,49 @@ def test_selfbuilt_aggregated_funtion(documents):
     )
     values = statistic(documents)
     assert values == {"tests.test_statistic.calculate_product": 1100}
+
+
+class ListCharacterCountCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        return [factor * len(doc.text) for factor in range(5)]
+
+
+def test_ListCharacterCountCollector(documents):
+    statistic = ListCharacterCountCollector()
+    values = statistic(documents)
+    assert values == {"mean": 69.0, "std": 54.055527006958314, "min": 0, "max": 176}
+
+
+def test_aggregated_function_with_lists(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["median", "all", "tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
+
+
+class DictCharacterCountCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        return {char: doc.text.count(char) for char in "aeiou"}
+
+
+def test_DictCharacterCountCollector(documents):
+    statistic = DictCharacterCountCollector()
+    values = statistic(documents)
+    assert values == {
+        "a": {"mean": 2.0, "std": 1.0, "min": 1, "max": 3},
+        "e": {"mean": 2.5, "std": 0.5, "min": 2, "max": 3},
+        "i": {"mean": 1.0, "std": 0.0, "min": 1, "max": 1},
+        "o": {"mean": 2.5, "std": 1.5, "min": 1, "max": 4},
+        "u": {"mean": 1.0, "std": 1.0, "min": 0, "max": 2},
+    }
+
+
+def test_aggregated_function_with_dicts(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["median", "all", "tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
