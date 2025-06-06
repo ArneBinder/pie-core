@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List, Optional
 
 import pytest
 
@@ -52,3 +53,26 @@ def test_median_aggregated_function(documents):
     statistic = CharacterCountCollector(aggregation_functions=["median"])
     values = statistic(documents)
     assert values == {"median": 44}
+
+
+def test_builtin_aggregated_funtion(documents):
+    statistic = CharacterCountCollector(aggregation_functions=["all"])
+    values = statistic(documents)
+    assert values == {"all": True}
+
+
+def calculate_product(values: List[float]) -> Optional[float]:
+    if len(values) == 0:
+        return None
+    result = 1
+    for value in values:
+        result *= value
+    return result
+
+
+def test_selfbuilt_aggregated_funtion(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"tests.test_statistic.calculate_product": 1100}
