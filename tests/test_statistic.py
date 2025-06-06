@@ -36,19 +36,19 @@ def documents():
     return documents
 
 
-class TextLengthCountCollector(DocumentStatistic):
+class CharacterCountCollector(DocumentStatistic):
 
     def _collect(self, doc: Document) -> int:
         return len(doc.text)
 
 
-def test_TextLengthCountCollector(documents):
-    statistic = TextLengthCountCollector()
+def test_CharacterCountCollector(documents):
+    statistic = CharacterCountCollector()
     values = statistic(documents)
     assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
 
 
 def test_median_aggregated_function(documents):
-    statistic = TextLengthCountCollector(aggregation_functions=["median"])
+    statistic = CharacterCountCollector(aggregation_functions=["median"])
     values = statistic(documents)
     assert values == {"median": 44}
