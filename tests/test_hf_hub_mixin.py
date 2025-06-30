@@ -20,6 +20,7 @@ def cleanup_hf_temp_repo():
     api = HfApi()
     api.delete_repo(HF_WRITE_PATH, missing_ok=True)
 
+
 class HFHubObject(HFHubMixin):
     config_name = "hf_hub_config.json"
     config_type_key = "hf_hub_config_type"
@@ -99,18 +100,19 @@ def test_save_pretrained(hf_hub_object, caplog, tmp_path, config_as_json):
 def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_json):
     try:
         with caplog.at_level(logging.INFO):
-            hf_hub_object.save_pretrained(save_directory=tmp_path, push_to_hub=True, repo_id=HF_WRITE_PATH)
+            hf_hub_object.save_pretrained(
+                save_directory=tmp_path, push_to_hub=True, repo_id=HF_WRITE_PATH
+            )
 
         assert (
-                f"_save_pretrained() called with arguments str(save_directory)='{tmp_path}'" in caplog.text
+            f"_save_pretrained() called with arguments str(save_directory)='{tmp_path}'"
+            in caplog.text
         )
 
         assert tmp_path.joinpath(hf_hub_object.config_name).exists()
         with open(tmp_path.joinpath(hf_hub_object.config_name)) as f:
             file_contents = f.read()
         assert file_contents == config_as_json
-
-
 
     finally:
         cleanup_hf_temp_repo()
@@ -125,7 +127,9 @@ def test_retrieve_config_file_local():
 def test_retrieve_config_file_local_wrong_path(caplog):
     with caplog.at_level(logging.WARNING):
         config, kwargs = HFHubObject.retrieve_config_file(WRONG_CONFIG_PATH)
-    assert caplog.messages == [f"{HFHubObject.config_name} not found in {Path(WRONG_CONFIG_PATH).resolve()}"]
+    assert caplog.messages == [
+        f"{HFHubObject.config_name} not found in {Path(WRONG_CONFIG_PATH).resolve()}"
+    ]
 
 
 @pytest.mark.slow
@@ -165,6 +169,7 @@ def test_push_to_hub(hf_hub_object):
 
     finally:
         cleanup_hf_temp_repo()
+
 
 def test_from_config(hf_hub_object, config_as_dict):
     new_hf_hub_object = HFHubObject.from_config(config=hf_hub_object.config)
