@@ -29,7 +29,7 @@ class HFHubObject(HFHubMixin):
         self.foo = foo
 
     def _config(self):
-        return {"foo": "bar"}
+        return {"foo": self.foo}
 
     def _save_pretrained(self, save_directory) -> None:
         # We cast save_directory to string, else it would include class type
@@ -57,7 +57,7 @@ class HFHubObject(HFHubMixin):
 
 @pytest.fixture(scope="module")
 def hf_hub_object() -> HFHubObject:
-    return HFHubObject()
+    return HFHubObject(foo="bar")
 
 
 @pytest.fixture(scope="module")
