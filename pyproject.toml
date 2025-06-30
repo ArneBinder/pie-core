@@ -29,15 +29,19 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9"
 huggingface_hub = ">=0.23.4,<0.26.0"
+# required for (Iterable)TaskEncodingDataset
+torch = {version = "^2.1.0", source = "pytorch-cpu"}
 
 [tool.poetry.group.dev.dependencies]
-torch = {version = "^2.1.0+cpu", source = "pytorch"}
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
 pre-commit = "^3.4.0"
 
+[tool.poetry.group.dev]
+optional = true
+
 [[tool.poetry.source]]
-name = "pytorch"
+name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 priority = "explicit"
 
