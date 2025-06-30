@@ -5,6 +5,19 @@ logger = logging.getLogger(__name__)
 
 
 class PreparableMixin:
+    """Mixin for preparable classes.
+
+    Provides common function to prepare class attributes and make sure they are set.
+
+    Usage:
+
+    - List all attributes that must exist after `prepare()` call in [`PREPARED_ATTRIBUTES`].
+    - Override `_prepare()` method for custom preparation.
+    - Override `_post_prepare()` method for further preparation steps that need prepared attributes.
+    - `post_prepare()` is called within `prepare()`, but you may want to call it manually if object is created
+    without prepare() (e.g. loaded from config file with all needed attributes).
+    """
+
     # list of attribute names that need to be set by _prepare()
     PREPARED_ATTRIBUTES: List[str] = []
 
@@ -21,7 +34,7 @@ class PreparableMixin:
     @property
     def prepared_attributes(self) -> Dict[str, Any]:
         if not self.is_prepared:
-            raise Exception("The module is not prepared.")
+            raise Exception(f"The {self.__class__.__name__} is not prepared.")
         return {param: getattr(self, param) for param in self.PREPARED_ATTRIBUTES}
 
     def _prepare(self, *args, **kwargs) -> None:
@@ -38,7 +51,7 @@ class PreparableMixin:
                 param for param in self.PREPARED_ATTRIBUTES if getattr(self, param, None) is None
             ]
             raise Exception(
-                f"{msg or ''} Required attributes that are not set: {str(attributes_not_prepared)}"
+                f"{'' if not msg else msg + ' '}Required attributes that are not set: {str(attributes_not_prepared)}"
             )
 
     def post_prepare(self) -> None:
