@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-PREPARED_ATTRIBUTES: List[str] = []
-
 
 class PreparableMixin:
     """Mixin for preparable classes.
