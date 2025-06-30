@@ -1,19 +1,26 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import pytest
+from huggingface_hub.hf_api import HfApi
 
-from pie_core.hf_hub_mixin import PieBaseHFHubMixin
-from pie_core.utils.dictionary import TNestedBoolDict
+from pie_core.hf_hub_mixin import HFHubMixin
 
 logger = logging.getLogger(__name__)
 
-THFHubMixin = TypeVar("THFHubMixin", bound="HFHubObject")
 CONFIG_PATH = Path(__file__).parent / "fixtures" / "configs"
+WRONG_CONFIG_PATH = Path(__file__).parent / "fixtures"
+HF_PATH = "rainbowrivey/HF_Hub_Test"
+HF_WRITE_PATH = "rainbowrivey/HF_Hub_Write_Test"
+WRONG_HF_PATH = "rainbowrivey/HF_Hub_Test_Wrong"
 
 
-class HFHubObject(PieBaseHFHubMixin):
+def cleanup_hf_temp_repo():
+    api = HfApi()
+    api.delete_repo(HF_WRITE_PATH, missing_ok=True)
+
+class HFHubObject(HFHubMixin):
     config_name = "hf_hub_config.json"
     config_type_key = "hf_hub_config_type"
 
@@ -32,7 +39,7 @@ class HFHubObject(PieBaseHFHubMixin):
 
     @classmethod
     def _from_pretrained(
-        cls: Type[THFHubMixin],
+        cls: Type[HFHubMixin],
         *,
         model_id: str,
         revision: Optional[str],
@@ -44,7 +51,7 @@ class HFHubObject(PieBaseHFHubMixin):
         token: Optional[Union[str, bool]],
         config: Optional[dict] = None,
         **kwargs,
-    ) -> THFHubMixin:
+    ) -> HFHubMixin:
         return cls.from_config(config=config or {}, **kwargs)
 
 
@@ -88,22 +95,77 @@ def test_save_pretrained(hf_hub_object, caplog, tmp_path, config_as_json):
     assert file_contents == config_as_json
 
 
-def test_retrieve_config_file(hf_hub_object):
-    config, kwargs = hf_hub_object.retrieve_config_file(CONFIG_PATH)
+@pytest.mark.slow
+def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_json):
+    try:
+        with caplog.at_level(logging.INFO):
+            hf_hub_object.save_pretrained(save_directory=tmp_path, push_to_hub=True, repo_id=HF_WRITE_PATH)
+
+        assert (
+                f"_save_pretrained() called with arguments str(save_directory)='{tmp_path}'" in caplog.text
+        )
+
+        assert tmp_path.joinpath(hf_hub_object.config_name).exists()
+        with open(tmp_path.joinpath(hf_hub_object.config_name)) as f:
+            file_contents = f.read()
+        assert file_contents == config_as_json
+
+
+
+    finally:
+        cleanup_hf_temp_repo()
+
+
+def test_retrieve_config_file_local():
+    config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
     assert config is not None
     assert config == str(CONFIG_PATH / "hf_hub_config.json")
-    # TODO: Test loading from hub?
 
 
-def test_from_pretrained():
+def test_retrieve_config_file_local_wrong_path(caplog):
+    with caplog.at_level(logging.WARNING):
+        config, kwargs = HFHubObject.retrieve_config_file(WRONG_CONFIG_PATH)
+    assert caplog.messages == [f"{HFHubObject.config_name} not found in {Path(WRONG_CONFIG_PATH).resolve()}"]
+
+
+@pytest.mark.slow
+def test_retrieve_config_file_hf():
+    config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
+    assert config is not None
+    assert Path(config).is_file()
+
+
+@pytest.mark.slow
+def test_retrieve_config_file_hf_wrong_path(caplog):
+    with caplog.at_level(logging.WARNING):
+        config, kwargs = HFHubObject.retrieve_config_file(WRONG_HF_PATH)
+    assert caplog.messages == [f"{HFHubObject.config_name} not found in HuggingFace Hub."]
+
+
+def test_from_pretrained_local_config_file():
     pretrained = HFHubObject.from_pretrained(CONFIG_PATH)
     assert pretrained.is_from_pretrained
     assert pretrained.foo == "bar"
 
 
+@pytest.mark.slow
+def test_from_pretrained_hf(config_as_dict):
+    pretrained = HFHubObject.from_pretrained(HF_PATH)
+    assert pretrained.is_from_pretrained
+    assert pretrained.foo == "bar"
+
+
+@pytest.mark.slow
 def test_push_to_hub(hf_hub_object):
-    pass
+    try:
+        hf_hub_object.push_to_hub(HF_WRITE_PATH)
+        pretrained = HFHubObject.from_pretrained(HF_WRITE_PATH)
+        assert pretrained.is_from_pretrained
+        assert pretrained.foo == "bar"
 
+    finally:
+        cleanup_hf_temp_repo()
 
-def test_from_config(hf_hub_object):
-    pass
+def test_from_config(hf_hub_object, config_as_dict):
+    new_hf_hub_object = HFHubObject.from_config(config=hf_hub_object.config)
+    assert new_hf_hub_object.config == hf_hub_object.config
