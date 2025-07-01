@@ -6,11 +6,12 @@ import pytest
 from huggingface_hub.hf_api import HfApi
 
 from pie_core.hf_hub_mixin import HFHubMixin
+from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = Path(__file__).parent / "fixtures" / "configs"
-WRONG_CONFIG_PATH = Path(__file__).parent / "fixtures"
+CONFIG_PATH = FIXTURES_ROOT / "configs"
+WRONG_CONFIG_PATH = FIXTURES_ROOT
 HF_PATH = "rainbowrivey/HF_Hub_Test"
 HF_WRITE_PATH = "rainbowrivey/HF_Hub_Write_Test"
 WRONG_HF_PATH = "rainbowrivey/HF_Hub_Test_Wrong"
