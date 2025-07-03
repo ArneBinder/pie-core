@@ -11,15 +11,16 @@ from tests import FIXTURES_ROOT
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = FIXTURES_ROOT / "configs"
-WRONG_CONFIG_PATH = FIXTURES_ROOT
 HF_PATH = "rainbowrivey/HF_Hub_Test"
 HF_WRITE_PATH = "rainbowrivey/HF_Hub_Write_Test"
 WRONG_HF_PATH = "rainbowrivey/HF_Hub_Test_Wrong"
+HF_NO_ACCESS_MSG = (
+    "Not enough permissions to HuggingFace repository. "
+    "Provide a token with write access to 'rainbowrivey/HF_Hub_Write_Test'"
+)
 
-
-def cleanup_hf_temp_repo():
-    api = HfApi()
-    api.delete_repo(HF_WRITE_PATH, missing_ok=True)
+hf_api = HfApi()
+hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 
 class HFHubObject(HFHubMixin):
@@ -33,7 +34,7 @@ class HFHubObject(HFHubMixin):
     def _config(self):
         return {"foo": self.foo}
 
-    def _save_pretrained(self, save_directory) -> None:
+    def _save_pretrained(self, save_directory: Path) -> None:
         # We cast save_directory to string, else it would include class type
         # which is platform dependent.
         logger.info(f"_save_pretrained() called with arguments {str(save_directory)=}")
@@ -72,6 +73,11 @@ def config_as_json() -> str:
     return '{\n  "foo": "bar"\n}'
 
 
+@pytest.mark.test_hf_access
+def test_hf_access():
+    assert hf_has_write_access
+
+
 def test_is_from_pretrained(hf_hub_object):
     assert not hf_hub_object.is_from_pretrained
 
@@ -97,7 +103,7 @@ def test_save_pretrained(hf_hub_object, caplog, tmp_path, config_as_json):
     assert file_contents == config_as_json
 
 
-@pytest.mark.slow
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_json):
     try:
         with caplog.at_level(logging.INFO):
@@ -116,7 +122,7 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
         assert file_contents == config_as_json
 
     finally:
-        cleanup_hf_temp_repo()
+        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
 
 
 def test_retrieve_config_file_local():
@@ -125,22 +131,20 @@ def test_retrieve_config_file_local():
     assert config == str(CONFIG_PATH / "hf_hub_config.json")
 
 
-def test_retrieve_config_file_local_wrong_path(caplog):
+def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
     with caplog.at_level(logging.WARNING):
-        config, kwargs = HFHubObject.retrieve_config_file(WRONG_CONFIG_PATH)
+        config, kwargs = HFHubObject.retrieve_config_file(tmp_path)
     assert caplog.messages == [
-        f"{HFHubObject.config_name} not found in {Path(WRONG_CONFIG_PATH).resolve()}"
+        f"{HFHubObject.config_name} not found in {Path(tmp_path).resolve()}"
     ]
 
 
-@pytest.mark.slow
 def test_retrieve_config_file_hf():
     config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
     assert config is not None
     assert Path(config).is_file()
 
 
-@pytest.mark.slow
 def test_retrieve_config_file_hf_wrong_path(caplog):
     with caplog.at_level(logging.WARNING):
         config, kwargs = HFHubObject.retrieve_config_file(WRONG_HF_PATH)
@@ -153,14 +157,13 @@ def test_from_pretrained_local_config_file():
     assert pretrained.foo == "bar"
 
 
-@pytest.mark.slow
 def test_from_pretrained_hf(config_as_dict):
     pretrained = HFHubObject.from_pretrained(HF_PATH)
     assert pretrained.is_from_pretrained
     assert pretrained.foo == "bar"
 
 
-@pytest.mark.slow
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_push_to_hub(hf_hub_object):
     try:
         hf_hub_object.push_to_hub(HF_WRITE_PATH)
@@ -169,7 +172,7 @@ def test_push_to_hub(hf_hub_object):
         assert pretrained.foo == "bar"
 
     finally:
-        cleanup_hf_temp_repo()
+        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
 
 
 def test_from_config(hf_hub_object, config_as_dict):
