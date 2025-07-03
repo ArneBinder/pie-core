@@ -126,55 +126,66 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
 
 
 def test_retrieve_config_file_local():
-    config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
-    assert config is not None
-    assert config == str(CONFIG_PATH / "hf_hub_config.json")
+    path_to_config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
+    assert path_to_config is not None
+    assert path_to_config == str(CONFIG_PATH / "hf_hub_config.json")
 
 
 def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
     with caplog.at_level(logging.WARNING):
-        config, kwargs = HFHubObject.retrieve_config_file(tmp_path)
+        path_to_config, kwargs = HFHubObject.retrieve_config_file(tmp_path)
     assert caplog.messages == [
         f"{HFHubObject.config_name} not found in {Path(tmp_path).resolve()}"
     ]
 
 
 def test_retrieve_config_file_hf():
-    config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
-    assert config is not None
-    assert Path(config).is_file()
+    path_to_config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
+    assert path_to_config is not None
+    assert Path(path_to_config).is_file()
 
 
 def test_retrieve_config_file_hf_wrong_path(caplog):
     with caplog.at_level(logging.WARNING):
-        config, kwargs = HFHubObject.retrieve_config_file(WRONG_HF_PATH)
+        path_to_config, kwargs = HFHubObject.retrieve_config_file(WRONG_HF_PATH)
     assert caplog.messages == [f"{HFHubObject.config_name} not found in HuggingFace Hub."]
 
 
-def test_from_pretrained_local_config_file():
-    pretrained = HFHubObject.from_pretrained(CONFIG_PATH)
+@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+def test_from_pretrained(config_as_dict, config_path):
+    pretrained = HFHubObject.from_pretrained(config_path)
     assert pretrained.is_from_pretrained
-    assert pretrained.foo == "bar"
+    assert pretrained.config == config_as_dict
 
 
-def test_from_pretrained_hf(config_as_dict):
-    pretrained = HFHubObject.from_pretrained(HF_PATH)
+@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+def test_from_pretrained_with_kwargs_override(config_as_dict, config_path):
+    pretrained = HFHubObject.from_pretrained(config_path, foo="test")
     assert pretrained.is_from_pretrained
-    assert pretrained.foo == "bar"
+    config = config_as_dict.copy()
+    config.update(foo="test")
+    assert pretrained.config == config
 
 
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
-def test_push_to_hub(hf_hub_object):
+def test_push_to_hub(hf_hub_object, config_as_dict):
     try:
         hf_hub_object.push_to_hub(HF_WRITE_PATH)
         pretrained = HFHubObject.from_pretrained(HF_WRITE_PATH)
         assert pretrained.is_from_pretrained
-        assert pretrained.foo == "bar"
+        assert pretrained.config == config_as_dict
 
     finally:
         hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
 
 
-def test_from_config(hf_hub_object, config_as_dict):
+def test_from_config(hf_hub_object):
     new_hf_hub_object = HFHubObject.from_config(config=hf_hub_object.config)
     assert new_hf_hub_object.config == hf_hub_object.config
+
+
+def test_from_config_with_kwargs_override(hf_hub_object):
+    new_hf_hub_object = HFHubObject.from_config(config=hf_hub_object.config, foo="test")
+    config = hf_hub_object.config.copy()
+    config.update(foo="test")
+    assert new_hf_hub_object.config == config
