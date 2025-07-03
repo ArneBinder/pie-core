@@ -90,6 +90,13 @@ def test_config(hf_hub_object, config_as_dict):
     assert hf_hub_object.config == config_as_dict
 
 
+def test_config_not_implemented():
+    class Test(HFHubMixin):
+        pass
+
+    assert Test().config == {}
+
+
 def test_save_pretrained(hf_hub_object, caplog, tmp_path, config_as_json):
     with caplog.at_level(logging.INFO):
         hf_hub_object.save_pretrained(save_directory=tmp_path)
@@ -101,6 +108,14 @@ def test_save_pretrained(hf_hub_object, caplog, tmp_path, config_as_json):
     with open(tmp_path.joinpath(hf_hub_object.config_name)) as f:
         file_contents = f.read()
     assert file_contents == config_as_json
+
+
+def test_save_pretrained_not_implemented(tmp_path):
+    class Test(HFHubMixin):
+        pass
+
+    with pytest.raises(NotImplementedError):
+        Test().save_pretrained(save_directory=tmp_path)
 
 
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
@@ -156,6 +171,15 @@ def test_from_pretrained(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(config_path)
     assert pretrained.is_from_pretrained
     assert pretrained.config == config_as_dict
+
+
+@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+def test_from_pretrained_not_implemented(config_path):
+    class Test(HFHubMixin):
+        pass
+
+    with pytest.raises(NotImplementedError):
+        Test().from_pretrained(config_path)
 
 
 @pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
