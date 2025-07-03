@@ -48,7 +48,7 @@ def test_base_class():
     assert C.base_class() is A
 
     with pytest.raises(RegistrationError) as e:
-        assert D.base_class() is D
+        D.base_class()
     assert str(e.value) == (
         f"{D.__name__} has no defined base class. "
         f"Please annotate {D.__name__} with @<SOME-PARENT-OF-{D.__name__}>.register() "
@@ -95,7 +95,7 @@ def test_register_subclass():
         pass
 
     with pytest.raises(RegistrationError) as e:
-        wrapper = Sub.register()
+        Sub.register()
     assert str(e.value) == "Cannot register Sub; it is already registered as a subclass of Base"
 
 
@@ -133,16 +133,16 @@ def test_by_name():
     assert A.by_name("B") == B
 
     with pytest.raises(RegistrationError) as e:
-        assert A.by_name("C") == C
+        A.by_name("C")
     assert str(e.value) == "C is not a registered name for A."
 
     with pytest.raises(RegistrationError) as e:
-        assert A.by_name("D") == D
+        A.by_name("D")
     assert str(e.value) == "D is not a registered name for A."
 
     # You should call by_name() from a base class, you can't just
     with pytest.raises(RegistrationError) as e:
-        assert B.by_name("B") == B
+        B.by_name("B")
     assert str(e.value) == "B is not a registered name for B."
     # but you can:
     assert B.base_class().by_name("B") == B
@@ -175,20 +175,17 @@ def test_auto_classes():
     class Base(Registrable):
         pass
 
-    T = TypeVar("T", bound=RegistrableProtocol)
+    class NotSub(Registrable[Base]):
+        """Some class not directly subclassed from Base, it can not be registered."""
 
-    class Auto(Registrable[T]):
-        pass
-
-    class AutoBase(Auto[Base]):
         BASE_CLASS = Base
 
     @Base.register()
     class Sub(Base):
         pass
 
-    assert AutoBase.base_class().by_name("Sub") == Sub
+    assert NotSub.base_class().by_name("Sub") == Sub
 
     with pytest.raises(RegistrationError) as e:
-        assert AutoBase.base_class().by_name("AutoBase") == AutoBase
+        NotSub.base_class().by_name("AutoBase")
     assert e.value.args[0] == "AutoBase is not a registered name for Base."
