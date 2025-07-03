@@ -1,4 +1,4 @@
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
 import pytest
 
@@ -140,6 +140,15 @@ def test_by_name():
         assert A.by_name("D") == D
     assert str(e.value) == "D is not a registered name for A."
 
+    # You should call by_name() from a base class, you can't just
+    with pytest.raises(RegistrationError) as e:
+        assert B.by_name("B") == B
+    assert str(e.value) == "B is not a registered name for B."
+    # but you can:
+    assert B.base_class().by_name("B") == B
+    # or from any other subclass:
+    assert C.base_class().by_name("B") == B
+
 
 def test_registered_name_for_class():
     assert A.registered_name_for_class(B) == "B"
@@ -160,3 +169,26 @@ def test_name_for_object_class():
     # Function returns class name if no entry in registry was found
     assert A.name_for_object_class(c) == "C"
     assert A.name_for_object_class(test) == "Test"
+
+
+def test_auto_classes():
+    class Base(Registrable):
+        pass
+
+    T = TypeVar("T", bound=RegistrableProtocol)
+
+    class Auto(Registrable[T]):
+        pass
+
+    class AutoBase(Auto[Base]):
+        BASE_CLASS = Base
+
+    @Base.register()
+    class Sub(Base):
+        pass
+
+    assert AutoBase.base_class().by_name("Sub") == Sub
+
+    with pytest.raises(RegistrationError) as e:
+        assert AutoBase.base_class().by_name("AutoBase") == AutoBase
+    assert e.value.args[0] == "AutoBase is not a registered name for Base."
