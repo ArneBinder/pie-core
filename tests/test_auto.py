@@ -12,7 +12,7 @@ CONFIG_PATH = FIXTURES_ROOT / "configs"
 
 class TestHFHubMixin(HFHubMixin):
     config_name: str = "test_config.json"
-    config_type_key: str = "test_config_type"
+    config_type_key: str = "test_type"
 
     @classmethod
     def _from_pretrained(
@@ -58,7 +58,7 @@ class AutoTest(TestHFHubMixin, Auto[Test]):
 
 @pytest.fixture(scope="module")
 def config_as_dict() -> Dict[str, Any]:
-    return {"test_config_type": "Sub", "foo": "Test"}
+    return {"test_type": "Sub", "foo": "Test"}
 
 
 def test_from_config(config_as_dict):
@@ -68,7 +68,7 @@ def test_from_config(config_as_dict):
 
 
 def test_from_config_with_kwargs_override(config_as_dict):
-    sub = AutoTest.from_config(config=config_as_dict, test_config_type="Sub2", foo="Test2")
+    sub = AutoTest.from_config(config=config_as_dict, test_type="Sub2", foo="Test2")
     assert isinstance(sub, Sub2)
     assert sub.foo == "Test2"
 
@@ -81,7 +81,7 @@ def test_from_pretrained():
 
 
 def test_from_pretrained_with_kwargs_override():
-    sub = AutoTest.from_pretrained(CONFIG_PATH, test_config_type="Sub2", foo="Test2")
+    sub = AutoTest.from_pretrained(CONFIG_PATH, test_type="Sub2", foo="Test2")
     assert isinstance(sub, Sub2)
     assert sub.is_from_pretrained
     assert sub.foo == "Test2"

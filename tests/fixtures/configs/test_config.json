@@ -1,4 +1,4 @@
 {
-  "test_config_type": "Sub",
+  "test_type": "Sub",
   "foo": "Test"
 }
