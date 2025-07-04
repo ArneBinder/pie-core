@@ -141,6 +141,34 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
         hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
 
 
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
+def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path, config_as_json):
+    #   If no repo_id was provided, save_directory will be used instead.
+    # We need to name folder exactly as the Repository Name.
+    #   Token used for this tests should be issued by Repo owner, not anyone else with access,
+    # since repo will be looked up/created under current User's name.
+    #   In this case path also contains Username, which is not necessary, it will be ignored;
+    # But this is a simple solution to make sure folder has the right name if we change repos.
+    path = tmp_path.joinpath(HF_WRITE_PATH)
+    path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with caplog.at_level(logging.INFO):
+            hf_hub_object.save_pretrained(save_directory=path, push_to_hub=True)
+
+        assert (
+            f"_save_pretrained() called with arguments str(save_directory)='{path}'" in caplog.text
+        )
+
+        assert path.joinpath(hf_hub_object.config_name).exists()
+        with open(path.joinpath(hf_hub_object.config_name)) as f:
+            file_contents = f.read()
+        assert file_contents == config_as_json
+
+    finally:
+        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+
+
 def test_retrieve_config_file_local():
     path_to_config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
     assert path_to_config is not None
