@@ -1,25 +1,16 @@
-from dataclasses import dataclass
 from typing import List, Optional
 
 import pytest
 
-from pie_core import (
-    AnnotationLayer,
-    Document,
-    DocumentStatistic,
-    annotation_field,
-)
-from tests.common.types import LabeledSpan, TextBasedDocument
+from pie_core import Document, DocumentStatistic
+from tests.common.types import LabeledSpan, TestDocumentWithEntities
 
 
 @pytest.fixture
 def documents():
-    @dataclass
-    class TextDocumentWithEntities(TextBasedDocument):
-        entities: AnnotationLayer[LabeledSpan] = annotation_field(target="text")
 
     # a test sentence with two entities
-    doc1 = TextDocumentWithEntities(
+    doc1 = TestDocumentWithEntities(
         text="The quick brown fox jumps over the lazy dog.",
     )
     doc1.entities.append(LabeledSpan(start=4, end=19, label="animal"))
@@ -28,7 +19,7 @@ def documents():
     assert str(doc1.entities[1]) == "lazy dog"
 
     # a second test sentence with a different text and a single entity (a company)
-    doc2 = TextDocumentWithEntities(text="Apple is a great company.")
+    doc2 = TestDocumentWithEntities(text="Apple is a great company.")
     doc2.entities.append(LabeledSpan(start=0, end=5, label="company"))
     assert str(doc2.entities[0]) == "Apple"
 
