@@ -1,0 +1,115 @@
+from typing import List, Optional
+
+import pytest
+
+from pie_core import Document, DocumentStatistic
+from tests.fixtures.types import LabeledSpan, TestDocumentWithEntities
+
+
+@pytest.fixture
+def documents():
+
+    # a test sentence with two entities
+    doc1 = TestDocumentWithEntities(
+        text="The quick brown fox jumps over the lazy dog.",
+    )
+    doc1.entities.append(LabeledSpan(start=4, end=19, label="animal"))
+    doc1.entities.append(LabeledSpan(start=35, end=43, label="animal"))
+    assert str(doc1.entities[0]) == "quick brown fox"
+    assert str(doc1.entities[1]) == "lazy dog"
+
+    # a second test sentence with a different text and a single entity (a company)
+    doc2 = TestDocumentWithEntities(text="Apple is a great company.")
+    doc2.entities.append(LabeledSpan(start=0, end=5, label="company"))
+    assert str(doc2.entities[0]) == "Apple"
+
+    documents = [doc1, doc2]
+
+    return documents
+
+
+class CharacterCountCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        return len(doc.text)
+
+
+def test_CharacterCountCollector(documents):
+    statistic = CharacterCountCollector()
+    values = statistic(documents)
+    assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
+
+
+def test_median_aggregated_function(documents):
+    statistic = CharacterCountCollector(aggregation_functions=["median"])
+    values = statistic(documents)
+    assert values == {"median": 44}
+
+
+def test_builtin_aggregated_funtion(documents):
+    statistic = CharacterCountCollector(aggregation_functions=["all"])
+    values = statistic(documents)
+    assert values == {"all": True}
+
+
+def calculate_product(values: List[float]) -> Optional[float]:
+    if len(values) == 0:
+        return None
+    result = 1
+    for value in values:
+        result *= value
+    return result
+
+
+def test_selfbuilt_aggregated_funtion(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"tests.test_statistic.calculate_product": 1100}
+
+
+class ListCharacterCountCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        return [factor * len(doc.text) for factor in range(5)]
+
+
+def test_ListCharacterCountCollector(documents):
+    statistic = ListCharacterCountCollector()
+    values = statistic(documents)
+    assert values == {"mean": 69.0, "std": 54.055527006958314, "min": 0, "max": 176}
+
+
+def test_aggregated_function_with_lists(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["median", "all", "tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
+
+
+class DictCharacterCountCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        return {char: doc.text.count(char) for char in "aeiou"}
+
+
+def test_DictCharacterCountCollector(documents):
+    statistic = DictCharacterCountCollector()
+    values = statistic(documents)
+    assert values == {
+        "a": {"mean": 2.0, "std": 1.0, "min": 1, "max": 3},
+        "e": {"mean": 2.5, "std": 0.5, "min": 2, "max": 3},
+        "i": {"mean": 1.0, "std": 0.0, "min": 1, "max": 1},
+        "o": {"mean": 2.5, "std": 1.5, "min": 1, "max": 4},
+        "u": {"mean": 1.0, "std": 1.0, "min": 0, "max": 2},
+    }
+
+
+def test_aggregated_function_with_dicts(documents):
+    statistic = CharacterCountCollector(
+        aggregation_functions=["median", "all", "tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
