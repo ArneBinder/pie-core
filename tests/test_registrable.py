@@ -1,8 +1,6 @@
-from typing import TypeVar
-
 import pytest
 
-from pie_core.registrable import Registrable, RegistrableProtocol, RegistrationError
+from pie_core.registrable import Registrable, RegistrationError
 
 
 class A(Registrable):
@@ -52,7 +50,9 @@ def test_base_class():
     assert str(e.value) == (
         f"{D.__name__} has no defined base class. "
         f"Please annotate {D.__name__} with @<SOME-PARENT-OF-{D.__name__}>.register() "
-        f"to register it at <SOME-PARENT-OF-{D.__name__}>."
+        f"to register it at <SOME-PARENT-OF-{D.__name__}>. "
+        "In case you don't want to add this class to registry, you can instead manually set "
+        f"the {D.__name__}.BASE_CLASS attribute."
     )
 
 
@@ -71,14 +71,12 @@ def test_register():
         pass
 
     # Test main functionality
-    assert not Base.BASE_CLASS
-    assert not Test.BASE_CLASS
+    assert Base.BASE_CLASS is None
+    assert Test.BASE_CLASS is None
 
     wrapper = Base.register()
-    assert Base.BASE_CLASS
-    assert Test.BASE_CLASS
-    assert Base.base_class() is Base
-    assert Test.base_class() is Base
+    assert Base.BASE_CLASS is Base
+    assert Test.BASE_CLASS is Base
 
     # Test wrapper function
     assert Registrable._registry[Base] == {}
@@ -86,7 +84,7 @@ def test_register():
     assert Registrable._registry[Base] == {"Test": Test}
 
 
-def test_register_subclass():
+def test_register_from_a_subclass():
     class Base(Registrable):
         pass
 
@@ -187,5 +185,5 @@ def test_auto_classes():
     assert NotSub.base_class().by_name("Sub") == Sub
 
     with pytest.raises(RegistrationError) as e:
-        NotSub.base_class().by_name("AutoBase")
-    assert e.value.args[0] == "AutoBase is not a registered name for Base."
+        NotSub.base_class().by_name("NotSub")
+    assert e.value.args[0] == "NotSub is not a registered name for Base."

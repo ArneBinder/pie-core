@@ -22,7 +22,9 @@ class RegistrableProtocol(Protocol[T2]):
             raise RegistrationError(
                 f"{cls.__name__} has no defined base class. "
                 f"Please annotate {cls.__name__} with @<SOME-PARENT-OF-{cls.__name__}>.register() "
-                f"to register it at <SOME-PARENT-OF-{cls.__name__}>."
+                f"to register it at <SOME-PARENT-OF-{cls.__name__}>. "
+                "In case you don't want to add this class to registry, you can instead manually set "
+                f"the {cls.__name__}.BASE_CLASS attribute."
             )
         return cls.BASE_CLASS
 
