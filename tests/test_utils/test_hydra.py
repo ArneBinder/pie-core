@@ -82,7 +82,8 @@ def test_resolve_optional_document_type():
 
     assert resolve_optional_document_type(TextBasedDocument) == TextBasedDocument
     assert (
-        resolve_optional_document_type("tests.common.types.TextBasedDocument") == TextBasedDocument
+        resolve_optional_document_type("tests.fixtures.types.TextBasedDocument")
+        == TextBasedDocument
     )
 
 
@@ -115,14 +116,16 @@ def test_resolve_optional_document_type_no_document():
 def test_serialize_type():
 
     serialized_dt = serialize_type(TestDocument)
-    assert serialized_dt == "tests.common.types.TestDocument"
+    assert serialized_dt == "tests.fixtures.types.TestDocument"
     resolved_dt = resolve_optional_document_type(serialized_dt)
     assert resolved_dt == TestDocument
 
 
 def test_resolve_document_type():
     assert resolve_type(TestDocumentWithEntities) == TestDocumentWithEntities
-    assert resolve_type("tests.common.types.TestDocumentWithEntities") == TestDocumentWithEntities
+    assert (
+        resolve_type("tests.fixtures.types.TestDocumentWithEntities") == TestDocumentWithEntities
+    )
     with pytest.raises(TypeError) as exc_info:
         resolve_type("tests.test_utils.test_hydra.test_resolve_document_type")
     assert str(exc_info.value).startswith(
