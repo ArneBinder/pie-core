@@ -3,7 +3,7 @@ from typing import List, Optional
 import pytest
 
 from pie_core import Document, DocumentStatistic
-from tests.common.types import LabeledSpan, TestDocumentWithEntities
+from tests.fixtures.types import LabeledSpan, TestDocumentWithEntities
 
 
 @pytest.fixture
