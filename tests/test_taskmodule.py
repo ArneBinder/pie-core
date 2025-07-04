@@ -3,8 +3,8 @@ from collections.abc import Generator, Sequence
 
 import pytest
 
-from tests.common.taskmodules import TestDocumentWithLabel, TestTaskModule
-from tests.common.types import Label
+from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
+from tests.fixtures.types import Label
 
 
 @pytest.fixture(scope="module")
