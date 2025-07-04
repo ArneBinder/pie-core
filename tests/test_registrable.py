@@ -70,7 +70,13 @@ def test_register():
     class Test(Base):
         pass
 
-    # Test main functionality
+    # Base.register() does two main things:
+    # 1) Sets Base.BASE_CLASS to itself (if it already isn't)
+    # 2) Returns a decorator function that adds argument Class to Base's registry.
+
+    # We call Base.register() not as a decorator as usual, since we want to test the above parts separately.
+
+    # Test register() functionality
     assert Base.BASE_CLASS is None
     assert Test.BASE_CLASS is None
 
@@ -78,7 +84,7 @@ def test_register():
     assert Base.BASE_CLASS is Base
     assert Test.BASE_CLASS is Base
 
-    # Test wrapper function
+    # Test decorator functionality
     assert Registrable._registry[Base] == {}
     wrapper(Test)
     assert Registrable._registry[Base] == {"Test": Test}
@@ -93,6 +99,8 @@ def test_register_from_a_subclass():
         pass
 
     with pytest.raises(RegistrationError) as e:
+        # Here we do not decorate any class, since error happens in register() itself,
+        # and not in a decorator function it returns.
         Sub.register()
     assert str(e.value) == "Cannot register Sub; it is already registered as a subclass of Base"
 
@@ -174,7 +182,8 @@ def test_auto_classes():
         pass
 
     class NotSub(Registrable[Base]):
-        """Some class not directly subclassed from Base, it can not be registered."""
+        """Some class not directly subclassed from Base, it can not be registered itself, but it
+        can be used to retrieve other subclasses of Base."""
 
         BASE_CLASS = Base
 
