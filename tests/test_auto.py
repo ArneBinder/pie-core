@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Type, Union
 import pytest
 
 from pie_core import Auto, Registrable
-from pie_core.hf_hub_mixin import HFHubMixin, T
+from pie_core.hf_hub_mixin import HFHubMixin
 from tests import FIXTURES_ROOT
 
 CONFIG_PATH = FIXTURES_ROOT / "configs"
