@@ -18,11 +18,18 @@ T = TypeVar("T", bound="HFHubProtocol")
 
 
 class HFHubProtocol(Protocol):
+    """Implementation of [`HFHubProtocol`] to provide basic HF and local upload/download
+    functionality It is based on an early version of ModelHubMixin, see:
+
+    https://github.com/huggingface/huggingface_hub/blob/main/src/huggingface_hub/hub_mixin.py
+    """
 
     config_name: str = "not_implemented.json"
     config_type_key: str = "not_implemented"
 
     def _config(self) -> Optional[Dict[str, Any]]:
+        """This method should return dictionary with all class attributes needed to reproduce your
+        object."""
         return None
 
     @property
@@ -358,6 +365,8 @@ class HFHubProtocol(Protocol):
 
 
 class HFHubMixin(HFHubProtocol):
+    """This mixin provides basic HF and local config upload/download functionality for models,
+    taskmodules and pipelines."""
 
     def __init__(self, *args, is_from_pretrained: bool = False, **kwargs):
         # skip the __init__ of HFHubProtocol: this would interrupt the
