@@ -22,7 +22,9 @@ class RegistrableProtocol(Protocol[T2]):
             raise RegistrationError(
                 f"{cls.__name__} has no defined base class. "
                 f"Please annotate {cls.__name__} with @<SOME-PARENT-OF-{cls.__name__}>.register() "
-                f"to register it at <SOME-PARENT-OF-{cls.__name__}>."
+                f"to register it at <SOME-PARENT-OF-{cls.__name__}>. "
+                "In case you don't want to add this class to registry, you can instead manually set "
+                f"the {cls.__name__}.BASE_CLASS attribute."
             )
         return cls.BASE_CLASS
 
@@ -36,6 +38,12 @@ class RegistrableProtocol(Protocol[T2]):
         cls: Type[T],
         name: Optional[str] = None,
     ) -> Callable[[Type[T]], Type[T]]:
+        """Registers [`cls`] as a base class for itself if it isn't already registered.
+
+        Returns: a decorator that registers the given class as a subclass of [`cls`].
+
+        Throws: [`RegistrationError`] if [`cls`] is already registered as a subclass.
+        """
         if cls.BASE_CLASS is not None and cls is not cls.BASE_CLASS:
             raise RegistrationError(
                 f"Cannot register {cls.__name__}; it is already registered as a subclass of {cls.BASE_CLASS.__name__}"
@@ -45,6 +53,11 @@ class RegistrableProtocol(Protocol[T2]):
         registry = RegistrableProtocol._registry[cls]
 
         def add_subclass_to_registry(subclass: Type[T]) -> Type[T]:
+            """Adds [`subclass`] to registry.
+
+            Throws: [`RegistrationError`] if [`subclass`] is not a subclass of [`cls`]
+            or if [`subclass.__name__`] already exists in the registry.
+            """
             register_name = subclass.__name__ if name is None else name
 
             if not inspect.isclass(subclass) or not issubclass(subclass, cls):
