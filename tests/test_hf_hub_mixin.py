@@ -11,12 +11,13 @@ from tests import FIXTURES_ROOT
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = FIXTURES_ROOT / "configs"
-HF_PATH = "rainbowrivey/HF_Hub_Test"
-HF_WRITE_PATH = "rainbowrivey/HF_Hub_Write_Test"
-WRONG_HF_PATH = "rainbowrivey/HF_Hub_Test_Wrong"
+HF_USERNAME = "rainbowrivey"
+HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
+HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
+WRONG_HF_PATH = f"{HF_USERNAME}/HF_Hub_Test_Wrong"
 HF_NO_ACCESS_MSG = (
     "Not enough permissions to HuggingFace repository. "
-    "Provide a token with write access to 'rainbowrivey/HF_Hub_Write_Test'"
+    f"Provide a token with write access to '{HF_WRITE_PATH}'"
 )
 
 hf_api = HfApi()
@@ -148,7 +149,7 @@ def test_retrieve_config_file_local():
 
 def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
     with caplog.at_level(logging.WARNING):
-        path_to_config, kwargs = HFHubObject.retrieve_config_file(tmp_path)
+        HFHubObject.retrieve_config_file(tmp_path)
     assert caplog.messages == [
         f"{HFHubObject.config_name} not found in {Path(tmp_path).resolve()}"
     ]
@@ -162,7 +163,7 @@ def test_retrieve_config_file_hf():
 
 def test_retrieve_config_file_hf_wrong_path(caplog):
     with caplog.at_level(logging.WARNING):
-        path_to_config, kwargs = HFHubObject.retrieve_config_file(WRONG_HF_PATH)
+        HFHubObject.retrieve_config_file(WRONG_HF_PATH)
     assert caplog.messages == [f"{HFHubObject.config_name} not found in HuggingFace Hub."]
 
 
@@ -179,7 +180,7 @@ def test_from_pretrained_not_implemented(config_path):
         pass
 
     with pytest.raises(NotImplementedError):
-        Test().from_pretrained(config_path)
+        Test.from_pretrained(config_path)
 
 
 @pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
