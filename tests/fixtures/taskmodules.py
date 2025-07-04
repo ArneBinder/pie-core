@@ -15,7 +15,7 @@ from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TypedDict
 from typing_extensions import TypeAlias
 
 from pie_core import AnnotationLayer, TaskEncoding, TaskModule, annotation_field
-from tests.common.types import Label, TextBasedDocument
+from tests.fixtures.types import Label, TextBasedDocument
 
 logger = logging.getLogger(__name__)
 

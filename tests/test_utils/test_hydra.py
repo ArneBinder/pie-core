@@ -10,7 +10,7 @@ from pie_core.utils.hydra import (
     resolve_type,
     serialize_type,
 )
-from tests.common.types import (
+from tests.fixtures.types import (
     TestDocument,
     TestDocumentWithEntities,
     TestDocumentWithSentences,
