@@ -5,7 +5,13 @@ from typing import Iterator, Optional, Tuple, Union
 
 import pytest
 
-from pie_core import Annotation, TaskEncoding, TaskModule
+from pie_core import (
+    Annotation,
+    IterableTaskEncodingDataset,
+    TaskEncoding,
+    TaskEncodingDataset,
+    TaskModule,
+)
 from pie_core.taskmodule import (
     DocumentType,
     InputEncoding,
@@ -318,3 +324,73 @@ def test_encoding_iterator(
         assert caplog.messages == [
             "do not show document encoding progress because we encode lazily with an iterator"
         ]
+
+
+def test_encode_single_document(taskmodule, documents):
+    document = documents[0]
+    encodings = taskmodule.encode(document, encode_target=False)
+    assert len(encodings) == 1
+    assert encodings[0] is not None
+    assert encodings[0].document == document
+    inputs = encodings[0].inputs
+    assert inputs == [1, 2, 3, 4, 5, 6, 2, 7, 8]
+    tokens = taskmodule.token_ids2tokens(inputs)
+    assert tokens == [
+        "May",
+        "your",
+        "code",
+        "be",
+        "bug-free",
+        "and",
+        "your",
+        "algorithms",
+        "optimized!",
+    ]
+
+
+def test_encode_as_iterator_as_task_encoding_sequence(taskmodule, documents):
+    with pytest.raises(ValueError) as excinfo:
+        taskmodule.encode(
+            documents, encode_target=False, as_iterator=True, as_task_encoding_sequence=True
+        )
+    assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as Iterator"
+
+
+def test_encode_as_iterator_as_dataset(taskmodule, documents):
+    encodings_iterator = taskmodule.encode(
+        documents,
+        encode_target=False,
+        as_iterator=True,
+        as_dataset=True,
+        as_task_encoding_sequence=False,
+    )
+    assert isinstance(encodings_iterator, IterableTaskEncodingDataset)
+    encodings = list(encodings_iterator)
+    assert len(encodings) == 2
+    assert encodings[0].document == documents[0]
+    assert encodings[1].document == documents[1]
+
+
+def test_encode_as_dataset_as_task_encoding_sequence(taskmodule, documents):
+    with pytest.raises(ValueError) as excinfo:
+        taskmodule.encode(
+            documents,
+            encode_target=False,
+            as_dataset=True,
+            as_task_encoding_sequence=True,
+        )
+    assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as a dataset"
+
+
+def test_encode_as_dataset(taskmodule, documents):
+    encodings_dataset = taskmodule.encode(
+        documents,
+        encode_target=False,
+        as_dataset=True,
+        as_task_encoding_sequence=False,
+    )
+    assert isinstance(encodings_dataset, TaskEncodingDataset)
+    encodings = encodings_dataset
+    assert len(encodings) == 2
+    assert encodings[0].document == documents[0]
+    assert encodings[1].document == documents[1]
