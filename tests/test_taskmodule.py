@@ -20,10 +20,13 @@ from pie_core.taskmodule import (
     TaskBatchEncoding,
     TaskOutput,
 )
+from tests import FIXTURES_ROOT
 from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
 from tests.fixtures.types import Label
 
 logger = logging.getLogger(__name__)
+
+CONFIG_PATH = FIXTURES_ROOT / "configs"
 
 
 @pytest.fixture(scope="module")
@@ -394,3 +397,53 @@ def test_encode_as_dataset(taskmodule, documents):
     assert len(encodings) == 2
     assert encodings[0].document == documents[0]
     assert encodings[1].document == documents[1]
+
+
+def test_save_pretrained(taskmodule, tmp_path):
+    taskmodule.save_pretrained(tmp_path)
+    ...
+
+
+def test_from_pretrained(taskmodule):
+    from_pretrained_taskmodule = TestTaskModule.from_pretrained(CONFIG_PATH)
+    assert from_pretrained_taskmodule.is_from_pretrained
+    assert from_pretrained_taskmodule.is_prepared
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config
+
+
+def test_encode_inputs_with_encode_input_returns_none() -> None:
+    class NotImplementedTaskModule(TaskModule):
+        def encode_target(
+            self, task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding]
+        ) -> Optional[TargetEncoding]:
+            pass
+
+        def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
+            pass
+
+        def create_annotations_from_output(
+            self,
+            task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+            task_output: TaskOutput,
+        ) -> Iterator[Tuple[str, Annotation]]:
+            pass
+
+        def collate(
+            self,
+            task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+        ) -> TaskBatchEncoding:
+            pass
+
+        def encode_input(self, document: DocumentType) -> InputEncoding:
+            # To cover both cases 'continue' could be reached, else it is not marked as covered.
+            return None if document.text == "" else []
+
+    taskmodule = NotImplementedTaskModule()
+    documents = [TestDocumentWithLabel(""), TestDocumentWithLabel("ABC")]
+    task_encodings_empty, task_encodings_documents = taskmodule.encode_inputs(documents=documents)
+    assert task_encodings_empty is not None
+    assert task_encodings_empty == []
+    assert task_encodings_documents == documents
+    assert not any([encoding.has_targets for encoding in task_encodings_empty])
