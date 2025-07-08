@@ -1,10 +1,23 @@
 import copy
+import logging
 from collections.abc import Generator, Sequence
+from typing import Iterator, Optional, Tuple, Union
 
 import pytest
 
+from pie_core import Annotation, TaskEncoding, TaskModule
+from pie_core.taskmodule import (
+    DocumentType,
+    InputEncoding,
+    ModelBatchOutput,
+    TargetEncoding,
+    TaskBatchEncoding,
+    TaskOutput,
+)
 from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
 from tests.fixtures.types import Label
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
@@ -236,3 +249,72 @@ def test_decode(task_outputs, taskmodule, documents, inplace) -> None:
     ]
     assert labels_resolved == [["Positive"], ["Negative"]]
     assert labels_predictions_resolved == [["Negative"], ["O"]]
+
+
+def test_from_config_no_base_class(caplog):
+    # Unregistered test class with all abstract functions implemented
+    # Maybe should be moved to fixtures/taskmodules.py
+    class UnregisteredTaskModule(TaskModule):
+        BASE_CLASS = None
+
+        def encode_input(self, document: DocumentType) -> Optional[
+            Union[
+                TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+                Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            ]
+        ]:
+            pass
+
+        def encode_target(
+            self, task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding]
+        ) -> Optional[TargetEncoding]:
+            pass
+
+        def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
+            pass
+
+        def create_annotations_from_output(
+            self,
+            task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+            task_output: TaskOutput,
+        ) -> Iterator[Tuple[str, Annotation]]:
+            pass
+
+        def collate(
+            self,
+            task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+        ) -> TaskBatchEncoding:
+            pass
+
+    no_base_class = UnregisteredTaskModule()
+    assert not no_base_class.has_base_class()
+
+    with caplog.at_level(logging.WARNING):
+        no_base_class._config()
+    assert caplog.messages == [
+        "UnregisteredTaskModule does not have a base class. It will not work "
+        "with AutoTaskModule.from_pretrained() or "
+        "AutoTaskModule.from_config(). Consider to annotate the class with "
+        "@TaskModule.register() or @TaskModule.register(name='...') "
+        "to register it as a TaskModule which will allow to load it via AutoTaskModule."
+    ]
+
+
+@pytest.mark.parametrize(
+    ["batch_size", "encode_target", "show_progress"], [[None, False, False], [1, True, True]]
+)
+def test_encoding_iterator(
+    documents, taskmodule, batch_size, encode_target, show_progress, caplog
+):
+    encodings_iterator = taskmodule._encoding_iterator(
+        documents, encode_target=encode_target, batch_size=batch_size, show_progress=show_progress
+    )
+
+    encodings = list(encodings_iterator)
+    assert encodings[0].document == documents[0]
+    assert encodings[1].document == documents[1]
+
+    if batch_size is not None and show_progress:
+        assert caplog.messages == [
+            "do not show document encoding progress because we encode lazily with an iterator"
+        ]
