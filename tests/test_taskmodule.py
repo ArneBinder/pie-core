@@ -1,7 +1,7 @@
 import copy
 import logging
 from collections.abc import Generator, Sequence
-from typing import Iterator, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import pytest
 
@@ -10,6 +10,7 @@ from pie_core import (
     IterableTaskEncodingDataset,
     TaskEncoding,
     TaskEncodingDataset,
+    TaskEncodingSequence,
     TaskModule,
 )
 from pie_core.taskmodule import (
@@ -447,3 +448,82 @@ def test_encode_inputs_with_encode_input_returns_none() -> None:
     assert task_encodings_empty == []
     assert task_encodings_documents == documents
     assert not any([encoding.has_targets for encoding in task_encodings_empty])
+
+
+def test_decode_targets_as_list(task_outputs, taskmodule, documents) -> None:
+    # create a copy of the documents to not modify the original documents
+    documents = copy.deepcopy(documents)
+    task_encodings = taskmodule.encode(
+        documents, encode_target=False, as_task_encoding_sequence=False
+    )
+    assert isinstance(task_encodings, List)
+    # use inplace=False to not modify the original documents
+    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs)
+
+    # check if the documents are the same
+    for doc, doc_with_pred in zip(documents, docs_with_predictions):
+        assert doc is doc_with_pred
+
+    # check annotations
+    labels_resolved = [doc.label.resolve() for doc in documents]
+    labels_predictions_resolved = [
+        doc_with_pred.label.predictions.resolve() for doc_with_pred in docs_with_predictions
+    ]
+    assert labels_resolved == [["Positive"], ["Negative"]]
+
+
+def test_configure_model_metric(taskmodule, caplog):
+    with caplog.at_level(logging.WARNING):
+        assert taskmodule.configure_model_metric("Test") is None
+    assert caplog.messages == [
+        "TaskModule TestTaskModule does not implement a model metric. "
+        "Override configure_model_metric(stage: str) to configure a metric for stage 'Test'."
+    ]
+
+
+def test_encode_inputs_with_encode_inputs_returns_list(documents):
+    class TestTaskModule(TaskModule):
+        def encode_target(
+            self, task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding]
+        ) -> Optional[TargetEncoding]:
+            pass
+
+        def encode_input(self, document: DocumentType) -> Optional[
+            Union[
+                TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+                Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            ]
+        ]:
+            """Create one or multiple task encodings for the given document."""
+
+            inputs = list(document.text)
+
+            return [
+                TaskEncoding(
+                    document=document,
+                    inputs=[i],
+                )
+                for i in inputs
+            ]
+
+        def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
+            pass
+
+        def create_annotations_from_output(
+            self,
+            task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+            task_output: TaskOutput,
+        ) -> Iterator[Tuple[str, Annotation]]:
+            pass
+
+        def collate(
+            self,
+            task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+        ) -> TaskBatchEncoding:
+            pass
+
+    taskmodule = TestTaskModule()
+    task_encodings, task_encodings_documents = taskmodule.encode_inputs(documents=documents)
+    assert task_encodings is not None
+    assert len(task_encodings) == len(documents[0].text) + len(documents[1].text)
+    assert task_encodings_documents == documents
