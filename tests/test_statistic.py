@@ -138,7 +138,13 @@ def test_show_as_markdown(documents, caplog):
         values = statistic(documents)
 
     assert caplog.messages == [
-        "CharacterCountCollector (2 documents)\n|      |    0 |\n|:-----|-----:|\n| mean | 34.5 |\n| std  |  9.5 |\n| min  | 25   |\n| max  | 44   |"
+        "CharacterCountCollector (2 documents)\n"
+        "|      |    0 |\n"
+        "|:-----|-----:|\n"
+        "| mean | 34.5 |\n"
+        "| std  |  9.5 |\n"
+        "| min  | 25   |\n"
+        "| max  | 44   |"
     ]
 
 
