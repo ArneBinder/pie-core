@@ -16,9 +16,6 @@ TModelHFHubMixin = TypeVar("TModelHFHubMixin", bound="ModelHFHubMixin")
 
 
 class ModelHFHubMixin(HFHubMixin):
-    config_name = CONFIG_NAME
-    config_type_key = "model_type"
-    weights_file_name = PYTORCH_WEIGHTS_NAME
     """Implementation of [`ModelHFHubMixin`] to provide model Hub upload/download capabilities to
     models.
 
@@ -30,12 +27,12 @@ class ModelHFHubMixin(HFHubMixin):
     >>> from pie_core import PieModelHFHubMixin
 
 
-    >>> class MyPytorchModel(nn.Module, PieModelHFHubMixin):
+    >>> class MyModel(Model, nn.Module):
     ...     def __init__(self):
     ...         super().__init__()
     ...         self.param = nn.Parameter(torch.rand(3, 4))
     ...         self.linear = nn.Linear(4, 5)
-
+    ...
     ...     def forward(self, x):
     ...         return self.linear(x + self.param)
     ...
@@ -60,6 +57,10 @@ class ModelHFHubMixin(HFHubMixin):
     >>> model = MyModel.from_pretrained("username/my-awesome-model")
     ```
     """
+
+    config_name = CONFIG_NAME
+    config_type_key = "model_type"
+    weights_file_name = PYTORCH_WEIGHTS_NAME
 
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a model to a local directory."""
@@ -126,13 +127,13 @@ class ModelHFHubMixin(HFHubMixin):
         if "map_location" in kwargs:
             map_location = kwargs.pop("map_location")
             logger.warning(
-                f'map_location is deprecated. Use load_model_file=\\{"map_location": "{map_location}"\\} instead.'
+                f'map_location is deprecated. Use load_model_file={{"map_location": "{map_location}"}} instead.'
             )
             load_model_file_kwargs["map_location"] = map_location
         if "strict" in kwargs:
             strict = kwargs.pop("strict")
             logger.warning(
-                f'strict is deprecated. Use load_model_file=\\{"strict": {strict}\\} instead.'
+                f'strict is deprecated. Use load_model_file={{"strict": {strict}}} instead.'
             )
             load_model_file_kwargs["strict"] = strict
 
