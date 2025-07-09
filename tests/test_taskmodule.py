@@ -480,7 +480,7 @@ def test_configure_model_metric(taskmodule, caplog):
     ]
 
 
-def test_encode_inputs_with_encode_inputs_returns_list(documents):
+def test_encode_inputs_with_encode_input_returns_list(documents):
     class TestTaskModule(TaskModule):
         def encode_target(
             self, task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding]
