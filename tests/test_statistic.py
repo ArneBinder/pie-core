@@ -76,6 +76,16 @@ def test_selfbuilt_aggregated_funtion(documents):
     assert values == {"tests.test_statistic.calculate_product": 1100}
 
 
+def test_selfbuilt_invalid_funtion(documents):
+    with pytest.raises(ImportError) as error:
+        statistic = CharacterCountCollector(
+            aggregation_functions=["tests.test_statistic.invalid_function"]
+        )
+    assert "Cannot resolve aggregation function: tests.test_statistic.invalid_function" in str(
+        error.value
+    )
+
+
 class ListCharacterCountCollector(DocumentStatistic):
 
     def _collect(self, doc: Document) -> int:
