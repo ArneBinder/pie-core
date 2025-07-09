@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 import pytest
@@ -113,3 +114,13 @@ def test_aggregated_function_with_dicts(documents):
     )
     values = statistic(documents)
     assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
+
+
+def test_show_as_markdown(documents, caplog):
+    statistic = CharacterCountCollector(show_as_markdown=True)
+    with caplog.at_level(logging.INFO):
+        values = statistic(documents)
+
+    assert caplog.messages == [
+        "CharacterCountCollector (2 documents)\n|      |    0 |\n|:-----|-----:|\n| mean | 34.5 |\n| std  |  9.5 |\n| min  | 25   |\n| max  | 44   |"
+    ]
