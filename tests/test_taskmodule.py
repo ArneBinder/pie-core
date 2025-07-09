@@ -21,7 +21,7 @@ from pie_core.taskmodule import (
     TaskOutput,
 )
 from tests import FIXTURES_ROOT
-from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
+from tests.fixtures.taskmodule import TestDocumentWithLabel, TestTaskModule
 from tests.fixtures.types import Label
 
 logger = logging.getLogger(__name__)
