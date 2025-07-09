@@ -330,7 +330,7 @@ class TaskModule(
             Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         ]
     ]:
-        pass
+        """Create one or multiple task encodings for the given document."""
 
     def encode_targets(
         self,
@@ -361,7 +361,10 @@ class TaskModule(
         self,
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
     ) -> Optional[TargetEncoding]:
-        pass
+        """Create a target for a task encoding.
+
+        This may use any annotations of the underlying document.
+        """
 
     @abstractmethod
     def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
@@ -371,7 +374,6 @@ class TaskModule(
         This is in preparation to generate a list of all model outputs that has the same length as
         all model inputs.
         """
-        pass
 
     def decode(
         self,
@@ -437,13 +439,16 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> Iterator[Tuple[str, Annotation]]:
-        pass
+        """Convert a task output to annotations.
+
+        The method has to yield tuples (annotation_name, annotation).
+        """
 
     @abstractmethod
     def collate(
         self, task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]]
     ) -> TaskBatchEncoding:
-        pass
+        """Convert a list of task encodings to a batch that will be passed to the model."""
 
     def configure_model_metric(
         self, stage: str
