@@ -124,3 +124,18 @@ def test_show_as_markdown(documents, caplog):
     assert caplog.messages == [
         "CharacterCountCollector (2 documents)\n|      |    0 |\n|:-----|-----:|\n| mean | 34.5 |\n| std  |  9.5 |\n| min  | 25   |\n| max  | 44   |"
     ]
+
+
+@pytest.fixture
+def collection(documents):
+    return {"test": documents[0], "train": documents[1]}
+
+
+def test_collection_as_input(collection):
+    statistic = CharacterCountCollector()
+    values = statistic(collection)
+
+    assert values == {
+        "test": {"mean": 44.0, "std": 0.0, "min": 44, "max": 44},
+        "train": {"mean": 25.0, "std": 0.0, "min": 25, "max": 25},
+    }
