@@ -41,6 +41,12 @@ def test_CharacterCountCollector(documents):
     assert values == {"mean": 34.5, "std": 9.5, "min": 25, "max": 44}
 
 
+def test_CharacterCountCollector_with_empty_input():
+    statistic = CharacterCountCollector()
+    values = statistic([])
+    assert values == {}
+
+
 def test_median_aggregated_function(documents):
     statistic = CharacterCountCollector(aggregation_functions=["median"])
     values = statistic(documents)
