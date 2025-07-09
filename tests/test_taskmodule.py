@@ -10,7 +10,6 @@ from pie_core import (
     IterableTaskEncodingDataset,
     TaskEncoding,
     TaskEncodingDataset,
-    TaskEncodingSequence,
     TaskModule,
 )
 from pie_core.taskmodule import (
@@ -457,7 +456,7 @@ def test_decode_targets_as_list(task_outputs, taskmodule, documents) -> None:
         documents, encode_target=False, as_task_encoding_sequence=False
     )
     assert isinstance(task_encodings, List)
-    # use inplace=False to not modify the original documents
+
     docs_with_predictions = taskmodule.decode(task_encodings, task_outputs)
 
     # check if the documents are the same
