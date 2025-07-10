@@ -330,7 +330,8 @@ class TaskModule(
             Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         ]
     ]:
-        """Create one or multiple task encodings for the given document."""
+        """Create one or multiple task encodings including the model inputs from a given
+        document."""
 
     def encode_targets(
         self,
@@ -361,9 +362,12 @@ class TaskModule(
         self,
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
     ) -> Optional[TargetEncoding]:
-        """Create a target for a task encoding.
+        """Create a training target for a model input (which is wrapped in a task encoding). May
+        return None, in which case the task encoding will not be included in a training batch
+        (i.e., it will be excluded from training).
 
-        This may use any annotations of the underlying document.
+        This may use the model inputs, data (text, annotations, etc.) of the underlying document,
+        or any other metadata attached to the task encoding in encode input.
         """
 
     @abstractmethod
@@ -439,9 +443,11 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> Iterator[Tuple[str, Annotation]]:
-        """Convert a task output to annotations.
+        """Create annotations from a task output (a single model prediction) and the respective
+        task encoding (including model inputs and the source document). The annotations will be
+        attached as predictions to annotation layer(s) of the source document.
 
-        The method has to yield tuples (annotation_name, annotation).
+        The method has to yield tuples (annotation_layer_name, annotation).
         """
 
     @abstractmethod

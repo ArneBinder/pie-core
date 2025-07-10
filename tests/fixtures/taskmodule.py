@@ -143,8 +143,11 @@ class TestTaskModule(TaskModuleType):
     def encode_input(
         self,
         document: DocumentType,
-    ) -> TaskEncodingType:
+    ) -> Optional[TaskEncodingType]:
         """Create one or multiple task encodings for the given document."""
+
+        if document.text == "":
+            return None
 
         # tokenize the input text, this will be the input
         inputs = self.tokenize(document.text)
@@ -157,12 +160,15 @@ class TestTaskModule(TaskModuleType):
     def encode_target(
         self,
         task_encoding: TaskEncodingType,
-    ) -> TargetEncodingType:
+    ) -> Optional[TargetEncodingType]:
         """Create a target for a task encoding.
 
         This may use any annotations of the underlying document.
         """
 
+        # Discard encoding if no label is present
+        if task_encoding.document.label is None or not task_encoding.document.label:
+            return None
         # as above, all annotations are hold in lists, so we have to take its first element
         label_annotation = task_encoding.document.label[0]
         # translate the textual label to the target id
