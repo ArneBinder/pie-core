@@ -24,7 +24,7 @@ class ModelHFHubMixin(HFHubMixin):
     ```python
     >>> import torch
     >>> import torch.nn as nn
-    >>> from pie_core import PieModelHFHubMixin
+    >>> from pie_core import Model
 
 
     >>> class MyModel(Model, nn.Module):

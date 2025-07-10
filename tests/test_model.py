@@ -1,9 +1,9 @@
+import json
 import logging
 import os
+from typing import List
 
 import pytest
-import torch
-from torch import nn
 
 from pie_core import AutoModel, Model
 from tests import FIXTURES_ROOT
@@ -14,26 +14,24 @@ CONFIG_PATH = FIXTURES_ROOT / "configs" / "test-model"
 
 
 @Model.register("TestModel")
-class TestModel(Model, nn.Module):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.param = nn.Parameter(torch.Tensor([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]))
-        self.linear = nn.Linear(4, 5)
-        with torch.no_grad():
-            self.linear.weight.copy_(torch.zeros(self.linear.weight.shape))
-        torch.nn.init.zeros_(self.linear.bias)
+class TestModel(Model):
+    param: List[int]
 
-    def forward(self, x):
-        return self.linear(x + self.param)
+    def __init__(self, param=None, **kwargs):
+        super().__init__(**kwargs)
+        if param is None:
+            param = [0, 0, 0]
+        self.param = param
 
     def save_model_file(self, model_file: str) -> None:
-        torch.save(self.state_dict(), model_file)
+        state_dict = {"param": self.param}
+        json.dump(state_dict, open(model_file, "w"))
 
     def load_model_file(
         self, model_file: str, map_location: str = "cpu", strict: bool = False
     ) -> None:
-        state_dict = torch.load(model_file, map_location=torch.device(map_location))
-        self.load_state_dict(state_dict, strict=strict)
+        state_dict = json.load(open(model_file))
+        self.param = state_dict["param"]
 
 
 class UnimplementedTestModel(Model):
@@ -68,18 +66,12 @@ def test_save_pretrained(model, tmp_path) -> None:
 
 def test_from_pretrained(model) -> None:
     test_model = TestModel.from_pretrained(CONFIG_PATH)
-    assert test_model.state_dict().keys() == model.state_dict().keys()
-
-    for key in model.state_dict().keys():
-        assert torch.equal(test_model.state_dict()[key], model.state_dict()[key])
+    assert test_model.param == model.param
 
 
 def test_auto_model_from_pretrained(model) -> None:
     test_model = AutoModel.from_pretrained(CONFIG_PATH)
-    assert test_model.state_dict().keys() == model.state_dict().keys()
-
-    for key in model.state_dict().keys():
-        assert torch.equal(test_model.state_dict()[key], model.state_dict()[key])
+    assert test_model.param == model.param
 
 
 def test_from_pretrained_warnings(model, caplog) -> None:
