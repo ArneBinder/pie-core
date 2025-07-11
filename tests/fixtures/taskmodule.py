@@ -167,7 +167,7 @@ class TestTaskModule(TaskModuleType):
         """
 
         # Discard encoding if no label is present
-        if task_encoding.document.label is None or not task_encoding.document.label:
+        if len(task_encoding.document.label) == 0:
             return None
         # as above, all annotations are hold in lists, so we have to take its first element
         label_annotation = task_encoding.document.label[0]
