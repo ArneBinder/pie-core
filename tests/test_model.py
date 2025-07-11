@@ -10,10 +10,10 @@ from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "configs" / "test-model"
+CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "model"
 
 
-@Model.register("TestModel")
+@Model.register()
 class TestModel(Model):
     param: List[int]
 
@@ -34,18 +34,9 @@ class TestModel(Model):
         self.param = state_dict["param"]
 
 
-class UnimplementedTestModel(Model):
-    BASE_CLASS = None
-
-
 @pytest.fixture
 def model():
     return TestModel()
-
-
-@pytest.fixture
-def unimplemented_model():
-    return UnimplementedTestModel()
 
 
 def config_as_dict() -> dict:
@@ -58,10 +49,10 @@ def config_as_json() -> str:
 
 def test_save_pretrained(model, tmp_path) -> None:
     model.save_pretrained(tmp_path)
-    assert os.path.exists(tmp_path / "config.json")
-    with open(tmp_path / "config.json") as f:
+    assert os.path.exists(tmp_path / model.config_name)
+    with open(tmp_path / model.config_name) as f:
         assert f.read() == config_as_json()
-    assert os.path.exists(tmp_path / "pytorch_model.bin")
+    assert os.path.exists(tmp_path / model.weights_file_name)
 
 
 def test_from_pretrained(model) -> None:
@@ -83,11 +74,16 @@ def test_from_pretrained_warnings(model, caplog) -> None:
     ]
 
 
-def test_config_warning(unimplemented_model, caplog) -> None:
+def test_config_warning(caplog) -> None:
+    class UnregisteredTestModel(Model):
+        pass
+
+    unregistered_model = UnregisteredTestModel()
+
     with caplog.at_level(logging.WARNING):
-        unimplemented_model._config()
+        unregistered_model._config()
     assert caplog.messages == [
-        "UnimplementedTestModel does not have a base class. It will not work"
+        "UnregisteredTestModel is not registered. It will not work"
         " with AutoModel.from_pretrained() or"
         " AutoModel.from_config(). Consider to annotate the class with"
         " @Model.register() or @Model.register(name='...') to register it at as a Model"

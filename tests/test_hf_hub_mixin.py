@@ -10,7 +10,7 @@ from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "configs"
+CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "hf_hub_mixin"
 HF_USERNAME = "rainbowrivey"
 HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
 HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
@@ -26,7 +26,7 @@ hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 class HFHubObject(HFHubMixin):
     config_name = "hf_hub_config.json"
-    config_type_key = "hf_hub_config_type"
+    config_type_key = "hf_hub_type"
 
     def __init__(self, *args, foo: Optional[str] = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -214,7 +214,7 @@ def test_from_pretrained_not_implemented(config_path):
 @pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
 def test_from_pretrained_with_kwargs_override(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(
-        config_path, foo="test", hf_hub_config_type="will_be_discarded"
+        config_path, foo="test", hf_hub_type="will_be_discarded"
     )
     assert pretrained.is_from_pretrained
     config = config_as_dict.copy()
@@ -241,7 +241,7 @@ def test_from_config(hf_hub_object):
 
 def test_from_config_with_kwargs_override(hf_hub_object):
     new_hf_hub_object = HFHubObject.from_config(
-        config=hf_hub_object.config, foo="test", hf_hub_config_type="will_be_discarded"
+        config=hf_hub_object.config, foo="test", hf_hub_type="will_be_discarded"
     )
     config = hf_hub_object.config.copy()
     config.update(foo="test")
