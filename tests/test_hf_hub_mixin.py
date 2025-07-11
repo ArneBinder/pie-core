@@ -138,7 +138,7 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
         assert file_contents == config_as_json
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
@@ -166,7 +166,7 @@ def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path,
         assert file_contents == config_as_json
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 def test_retrieve_config_file_local():
@@ -231,7 +231,7 @@ def test_push_to_hub(hf_hub_object, config_as_dict):
         assert pretrained.config == config_as_dict
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 def test_from_config(hf_hub_object):

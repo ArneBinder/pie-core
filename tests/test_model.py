@@ -4,6 +4,7 @@ import os
 from typing import List
 
 import pytest
+from huggingface_hub import HfApi
 
 from pie_core import AutoModel, Model
 from tests import FIXTURES_ROOT
@@ -11,6 +12,17 @@ from tests import FIXTURES_ROOT
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "model"
+HF_USERNAME = "rainbowrivey"
+HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
+HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
+WRONG_HF_PATH = f"{HF_USERNAME}/HF_Hub_Test_Wrong"
+HF_NO_ACCESS_MSG = (
+    "Not enough permissions to HuggingFace repository. "
+    f"Provide a token with write access to '{HF_WRITE_PATH}'"
+)
+
+hf_api = HfApi()
+hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 
 @Model.register()
@@ -25,7 +37,7 @@ class TestModel(Model):
 
     def save_model_file(self, model_file: str) -> None:
         state_dict = {"param": self.param}
-        json.dump(state_dict, open(model_file, "w"))
+        json.dump(state_dict, open(model_file, "w"), indent=2)
 
     def load_model_file(
         self, model_file: str, map_location: str = "cpu", strict: bool = False
@@ -39,26 +51,102 @@ def model():
     return TestModel()
 
 
-def config_as_dict() -> dict:
-    return {"model_type": "TestModel"}
-
-
+@pytest.fixture
 def config_as_json() -> str:
     return '{\n  "model_type": "TestModel"\n}'
 
 
-def test_save_pretrained(model, tmp_path) -> None:
+@pytest.fixture
+def weights_as_json() -> str:
+    return '{\n  "param": [\n    0,\n    0,\n    0\n  ]\n}'
+
+
+@pytest.mark.test_hf_access
+def test_hf_access():
+    assert hf_has_write_access
+
+
+def test_save_pretrained(model, tmp_path, config_as_json, weights_as_json) -> None:
     model.save_pretrained(tmp_path)
     assert os.path.exists(tmp_path / model.config_name)
     with open(tmp_path / model.config_name) as f:
-        assert f.read() == config_as_json()
+        assert f.read() == config_as_json
     assert os.path.exists(tmp_path / model.weights_file_name)
+    with open(tmp_path / model.weights_file_name) as f:
+        assert f.read() == weights_as_json
 
 
-def test_from_pretrained(model) -> None:
-    test_model = TestModel.from_pretrained(CONFIG_PATH)
-    assert test_model.config == model.config
-    assert test_model.param == model.param
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
+def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, weights_as_json):
+    try:
+        model.save_pretrained(save_directory=tmp_path, push_to_hub=True, repo_id=HF_WRITE_PATH)
+
+        assert tmp_path.joinpath(model.config_name).exists()
+        with open(tmp_path.joinpath(model.config_name)) as f:
+            file_contents = f.read()
+        assert file_contents == config_as_json
+
+        assert tmp_path.joinpath(model.weights_file_name).exists()
+        with open(tmp_path.joinpath(model.weights_file_name)) as f:
+            file_contents = f.read()
+        assert file_contents == weights_as_json
+
+    finally:
+        hf_api.delete_file(model.config_name, HF_WRITE_PATH)
+        hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
+
+
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
+def test_save_pretrained_push_to_hub_no_repo_id(
+    model, caplog, tmp_path, config_as_json, weights_as_json
+):
+    #   If no repo_id was provided, save_directory will be used instead.
+    # We need to name folder exactly as the Repository Name.
+    #   Token used for this tests should be issued by Repo owner, not anyone else with access,
+    # since repo will be looked up/created under current User's name.
+    #   In this case path also contains Username, which is not necessary, it will be ignored;
+    # But this is a simple solution to make sure folder has the right name if we change repos.
+    path = tmp_path.joinpath(HF_WRITE_PATH)
+    path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        model.save_pretrained(save_directory=path, push_to_hub=True)
+
+        assert path.joinpath(model.config_name).exists()
+        with open(path.joinpath(model.config_name)) as f:
+            file_contents = f.read()
+        assert file_contents == config_as_json
+
+        assert path.joinpath(model.weights_file_name).exists()
+        with open(path.joinpath(model.weights_file_name)) as f:
+            file_contents = f.read()
+        assert file_contents == weights_as_json
+
+    finally:
+        hf_api.delete_file(model.config_name, HF_WRITE_PATH)
+        hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
+
+
+@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
+def test_push_to_hub(model):
+    try:
+        model.push_to_hub(HF_WRITE_PATH)
+        pretrained = TestModel.from_pretrained(HF_WRITE_PATH)
+        assert pretrained.is_from_pretrained
+        assert pretrained.config == model.config
+        assert pretrained.param == model.param
+
+    finally:
+        hf_api.delete_file(model.config_name, HF_WRITE_PATH)
+        hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
+
+
+@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+def test_from_pretrained(model, config_path):
+    pretrained = TestModel.from_pretrained(config_path)
+    assert pretrained.is_from_pretrained
+    assert pretrained.config == model.config
+    assert pretrained.param == model.param
 
 
 def test_save_and_from_pretrained(model, tmp_path) -> None:
@@ -70,6 +158,8 @@ def test_save_and_from_pretrained(model, tmp_path) -> None:
 
 def test_auto_model_from_pretrained(model) -> None:
     test_model = AutoModel.from_pretrained(CONFIG_PATH)
+    assert isinstance(test_model, TestModel)
+    assert test_model.config == model.config
     assert test_model.param == model.param
 
 
