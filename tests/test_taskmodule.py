@@ -23,7 +23,7 @@ from tests.fixtures.types import Label
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "configs"
+CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "taskmodule"
 
 
 @pytest.fixture(scope="module")
@@ -264,19 +264,22 @@ def test_decode(task_outputs, taskmodule, documents, inplace) -> None:
     assert labels_predictions_resolved == [["Negative"], ["O"]]
 
 
-def test_from_config_no_base_class(documents, caplog):
+def test_from_config_unregistered_taskmodule(documents, caplog):
     # Unregistered test class
     class UnregisteredTaskModule(TestTaskModule):
-        BASE_CLASS = None
+        pass
 
-    no_base_class = UnregisteredTaskModule()
-    no_base_class.prepare(documents)
-    assert not no_base_class.has_base_class()
+    unregistered_taskmodule = UnregisteredTaskModule()
+    unregistered_taskmodule.prepare(documents)
+    assert (
+        unregistered_taskmodule.base_class().registered_name_for_class(UnregisteredTaskModule)
+        is None
+    )
 
     with caplog.at_level(logging.WARNING):
-        no_base_class._config()
+        unregistered_taskmodule._config()
     assert caplog.messages == [
-        "UnregisteredTaskModule does not have a base class. It will not work "
+        "UnregisteredTaskModule is not registered. It will not work "
         "with AutoTaskModule.from_pretrained() or "
         "AutoTaskModule.from_config(). Consider to annotate the class with "
         "@TaskModule.register() or @TaskModule.register(name='...') "
@@ -295,8 +298,16 @@ def test_encoding_iterator(
     )
     assert isinstance(encodings_iterator, Iterator)
     encodings = list(encodings_iterator)
-    assert encodings[0].document == documents[0]
-    assert encodings[1].document == documents[1]
+    inputs = [[1, 2, 3, 4, 5, 6, 2, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21]]
+    assert len(encodings) == 2
+    for i, encoding in enumerate(encodings):
+        assert encoding.document == documents[i]
+        if encode_target:
+            assert taskmodule.id_to_label[encoding.targets] == documents[i].label[0].label
+        else:
+            assert not encoding.has_targets
+        assert encoding.metadata == {}
+        assert encoding.inputs == inputs[i]
 
     if batch_size is not None and show_progress:
         assert caplog.messages == [
@@ -308,12 +319,13 @@ def test_encode_single_document(taskmodule, documents):
     document = documents[0]
     encodings = taskmodule.encode(document, encode_target=True)
     assert len(encodings) == 1
-    assert encodings[0] is not None
-    assert encodings[0].document == document
-    inputs = encodings[0].inputs
-    assert inputs == [1, 2, 3, 4, 5, 6, 2, 7, 8]
-    tokens = taskmodule.token_ids2tokens(inputs)
-    assert tokens == [
+    encoding = encodings[0]
+
+    assert encoding.document == document
+    assert taskmodule.id_to_label[encoding.targets] == document.label[0].label
+    assert encoding.metadata == {}
+    assert encoding.inputs == [1, 2, 3, 4, 5, 6, 2, 7, 8]
+    assert taskmodule.token_ids2tokens(encoding.inputs) == [
         "May",
         "your",
         "code",
@@ -343,9 +355,13 @@ def test_encode_multiple_documents(taskmodule, documents):
     )
     documents[3].label = []
     encodings = taskmodule.encode(documents, encode_target=True)
+    inputs = [[1, 2, 3, 4, 5, 6, 2, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21]]
     assert len(encodings) == 2
-    assert encodings[0].document == documents[0]
-    assert encodings[1].document == documents[1]
+    for i, encoding in enumerate(encodings):
+        assert encoding.document == documents[i]
+        assert taskmodule.id_to_label[encoding.targets] == documents[i].label[0].label
+        assert encoding.metadata == {}
+        assert encoding.inputs == inputs[i]
 
 
 def test_encode_as_iterator_as_task_encoding_sequence(taskmodule, documents):
@@ -366,9 +382,13 @@ def test_encode_as_iterator_as_dataset(taskmodule, documents):
     )
     assert isinstance(encodings_iterator, IterableTaskEncodingDataset)
     encodings = list(encodings_iterator)
+    inputs = [[1, 2, 3, 4, 5, 6, 2, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21]]
     assert len(encodings) == 2
-    assert encodings[0].document == documents[0]
-    assert encodings[1].document == documents[1]
+    for i, encoding in enumerate(encodings):
+        assert encoding.document == documents[i]
+        assert not encoding.has_targets
+        assert encoding.metadata == {}
+        assert encoding.inputs == inputs[i]
 
 
 def test_encode_as_dataset_as_task_encoding_sequence(taskmodule, documents):
@@ -391,9 +411,13 @@ def test_encode_as_dataset(taskmodule, documents):
     )
     assert isinstance(encodings_dataset, TaskEncodingDataset)
     encodings = encodings_dataset
+    inputs = [[1, 2, 3, 4, 5, 6, 2, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21]]
     assert len(encodings) == 2
-    assert encodings[0].document == documents[0]
-    assert encodings[1].document == documents[1]
+    for i, encoding in enumerate(encodings):
+        assert encoding.document == documents[i]
+        assert not encoding.has_targets
+        assert encoding.metadata == {}
+        assert encoding.inputs == inputs[i]
 
 
 def test_save_pretrained(taskmodule, tmp_path, config_as_json):
@@ -413,8 +437,22 @@ def test_from_pretrained(taskmodule):
     assert from_pretrained_taskmodule.config == config
 
 
+def test_save_and_from_pretrained(taskmodule, tmp_path):
+    taskmodule.save_pretrained(tmp_path)
+    from_pretrained_taskmodule = TestTaskModule.from_pretrained(tmp_path)
+    assert from_pretrained_taskmodule.is_from_pretrained
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config
+
+
 def test_encode_inputs_with_encode_input_returns_none() -> None:
-    class BadEncoderTaskModule(TestTaskModule):
+    class NoneOrListEncoderTaskModule(TestTaskModule):
+        """This taskmodules encode_input() returns either an empty List or None.
+
+        We need to test how encode_inputs() handles both cases.
+        """
+
         def encode_input(
             self,
             document: DocumentType,
@@ -429,7 +467,7 @@ def test_encode_inputs_with_encode_input_returns_none() -> None:
             else:
                 return []
 
-    taskmodule = BadEncoderTaskModule()
+    taskmodule = NoneOrListEncoderTaskModule()
     documents = [TestDocumentWithLabel(""), TestDocumentWithLabel("ABC")]
     task_encodings_empty, task_encodings_documents = taskmodule.encode_inputs(documents=documents)
     assert task_encodings_empty is not None
@@ -440,17 +478,16 @@ def test_encode_inputs_with_encode_input_returns_none() -> None:
 
 def test_decode_targets_as_list(task_outputs, taskmodule, documents) -> None:
     # create a copy of the documents to not modify the original documents
-    documents = copy.deepcopy(documents)
     task_encodings = taskmodule.encode(
         documents, encode_target=False, as_task_encoding_sequence=False
     )
     assert isinstance(task_encodings, List)
 
-    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs)
+    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs, inplace=False)
 
-    # check if the documents are the same
+    # check if the documents are not the same since we use inplace == False
     for doc, doc_with_pred in zip(documents, docs_with_predictions):
-        assert doc is doc_with_pred
+        assert doc is not doc_with_pred
 
     # check annotations
     labels_resolved = [doc.label.resolve() for doc in documents]
@@ -458,6 +495,7 @@ def test_decode_targets_as_list(task_outputs, taskmodule, documents) -> None:
         doc_with_pred.label.predictions.resolve() for doc_with_pred in docs_with_predictions
     ]
     assert labels_resolved == [["Positive"], ["Negative"]]
+    assert labels_predictions_resolved == [["Negative"], ["O"]]
 
 
 def test_configure_model_metric(taskmodule, caplog):
@@ -482,7 +520,14 @@ def test_encode_inputs_with_encode_input_returns_list(documents):
             return [task_encoding, task_encoding]
 
     taskmodule = DoubledEncodingTaskModule()
-    task_encodings, task_encodings_documents = taskmodule.encode_inputs(documents=documents)
-    assert task_encodings is not None
-    assert len(task_encodings) == 4  # 2 documents X 2 encodings for each
+    taskmodule.prepare(documents)
+    encodings, task_encodings_documents = taskmodule.encode_inputs(documents=documents)
+    inputs = [[1, 2, 3, 4, 5, 6, 2, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21]]
+    assert encodings is not None
+    assert len(encodings) == 4  # 2 documents X 2 encodings for each
     assert task_encodings_documents == documents
+    for i, encoding in zip([0, 0, 1, 1], encodings):
+        assert encoding.document == documents[i]
+        assert not encoding.has_targets
+        assert encoding.metadata == {}
+        assert encoding.inputs == inputs[i]

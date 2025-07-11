@@ -102,11 +102,14 @@ class TaskModule(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        if self.has_base_class():
+        if (
+            self.has_base_class()
+            and self.base_class().registered_name_for_class(self.__class__) is not None
+        ):
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
             logger.warning(
-                f"{self.__class__.__name__} does not have a base class. It will not work "
+                f"{self.__class__.__name__} is not registered. It will not work "
                 "with AutoTaskModule.from_pretrained() or "
                 "AutoTaskModule.from_config(). Consider to annotate the class with "
                 "@TaskModule.register() or @TaskModule.register(name='...') "
