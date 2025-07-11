@@ -57,6 +57,14 @@ def test_save_pretrained(model, tmp_path) -> None:
 
 def test_from_pretrained(model) -> None:
     test_model = TestModel.from_pretrained(CONFIG_PATH)
+    assert test_model.config == model.config
+    assert test_model.param == model.param
+
+
+def test_save_and_from_pretrained(model, tmp_path) -> None:
+    model.save_pretrained(tmp_path)
+    test_model = TestModel.from_pretrained(tmp_path)
+    assert test_model.config == model.config
     assert test_model.param == model.param
 
 
