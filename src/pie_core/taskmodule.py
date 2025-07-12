@@ -102,11 +102,14 @@ class TaskModule(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        if self.has_base_class():
+        if (
+            self.has_base_class()
+            and self.base_class().registered_name_for_class(self.__class__) is not None
+        ):
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
             logger.warning(
-                f"{self.__class__.__name__} does not have a base class. It will not work "
+                f"{self.__class__.__name__} is not registered. It will not work "
                 "with AutoTaskModule.from_pretrained() or "
                 "AutoTaskModule.from_config(). Consider to annotate the class with "
                 "@TaskModule.register() or @TaskModule.register(name='...') "
@@ -330,7 +333,8 @@ class TaskModule(
             Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         ]
     ]:
-        pass
+        """Create one or multiple task encodings including the model inputs from a given
+        document."""
 
     def encode_targets(
         self,
@@ -361,7 +365,13 @@ class TaskModule(
         self,
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
     ) -> Optional[TargetEncoding]:
-        pass
+        """Create a training target for a model input (which is wrapped in a task encoding). May
+        return None, in which case the task encoding will not be included in a training batch
+        (i.e., it will be excluded from training).
+
+        This may use the model inputs, data (text, annotations, etc.) of the underlying document,
+        or any other metadata attached to the task encoding in encode input.
+        """
 
     @abstractmethod
     def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
@@ -371,7 +381,6 @@ class TaskModule(
         This is in preparation to generate a list of all model outputs that has the same length as
         all model inputs.
         """
-        pass
 
     def decode(
         self,
@@ -437,13 +446,18 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> Iterator[Tuple[str, Annotation]]:
-        pass
+        """Create annotations from a task output (a single model prediction) and the respective
+        task encoding (including model inputs and the source document). The annotations will be
+        attached as predictions to annotation layer(s) of the source document.
+
+        The method has to yield tuples (annotation_layer_name, annotation).
+        """
 
     @abstractmethod
     def collate(
         self, task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]]
     ) -> TaskBatchEncoding:
-        pass
+        """Convert a list of task encodings to a batch that will be passed to the model."""
 
     def configure_model_metric(
         self, stage: str
