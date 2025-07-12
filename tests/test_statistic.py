@@ -1,12 +1,10 @@
 import logging
-import sys
-import types
 from typing import List, Optional
-from unittest.mock import MagicMock
 
 import pytest
 
 from pie_core import Document, DocumentStatistic
+from tests import FIXTURES_ROOT
 from tests.fixtures.types import LabeledSpan, TestDocumentWithEntities
 
 
@@ -151,30 +149,20 @@ def test_show_as_markdown(documents, caplog):
     ]
 
 
-def test_show_histogram(documents, caplog):
-    # Create a fake plotext module with mocked methods
-    mock_plt = MagicMock()
-    mock_plotext = types.ModuleType("plotext")
-    mock_plotext.hist = mock_plt.hist
-    mock_plotext.title = mock_plt.title
-    mock_plotext.show = mock_plt.show
-    mock_plotext.clear_figure = mock_plt.clear_figure
-
-    # Patch sys.modules to replace plotext with our mock
-    sys.modules["plotext"] = mock_plotext
-
+def test_show_histogram(documents, capsys):
     # Now run the function that will import plotext
     statistic = CharacterCountCollector(show_histogram=True)
-    _ = statistic(documents)
+    statistic(documents)
+    captured = capsys.readouterr()
 
-    # Assert expected plotext calls
-    assert mock_plt.hist.called
-    mock_plt.title.assert_called_once()
-    mock_plt.show.assert_called_once()
-    mock_plt.clear_figure.assert_called_once()
+    fixture_file = FIXTURES_ROOT / "statistic" / "show_histogram_plotext.txt"
 
-    # Clean up: remove mock to avoid side effects
-    del sys.modules["plotext"]
+    # Check if the output matches the expected output
+    with open(fixture_file) as f:
+        expected_output = f.read()
+
+    # assert that the captured output matches the expected output
+    assert captured.out == expected_output
 
 
 @pytest.fixture
