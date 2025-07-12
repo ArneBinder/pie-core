@@ -66,6 +66,19 @@ def taskmodule(unprepared_taskmodule, documents) -> TestTaskModule:
 
 
 @pytest.fixture(scope="module")
+def label_ids(taskmodule, documents) -> List[int]:
+    return [taskmodule.label_to_id[label.label] for doc in documents for label in doc.label]
+
+
+def test_label_ids(taskmodule, label_ids) -> None:
+    assert label_ids == [2, 1]  # Positive for doc1, Negative for doc2
+    assert [taskmodule.id_to_label[label_id] for label_id in label_ids] == [
+        "Positive",
+        "Negative",
+    ]
+
+
+@pytest.fixture(scope="module")
 def config_as_dict() -> dict:
     return {"taskmodule_type": "TestTaskModule", "labels": ["Negative", "Positive"]}
 
@@ -308,14 +321,13 @@ def assert_task_encodings(
     ["batch_size", "encode_target", "show_progress"], [[None, False, False], [1, True, True]]
 )
 def test_encoding_iterator(
-    documents, taskmodule, batch_size, encode_target, show_progress, caplog
+    documents, label_ids, taskmodule, batch_size, encode_target, show_progress, caplog
 ):
     encodings_iterator = taskmodule._encoding_iterator(
         documents, encode_target=encode_target, batch_size=batch_size, show_progress=show_progress
     )
     assert isinstance(encodings_iterator, Iterator)
 
-    label_ids = [taskmodule.label_to_id[label] for label in ["Positive", "Negative"]]
     assert_task_encodings(
         task_encodings=encodings_iterator,
         expected_documents=documents,
@@ -332,18 +344,18 @@ def test_encoding_iterator(
         ]
 
 
-def test_encode_single_document(taskmodule, documents):
+def test_encode_single_document(taskmodule, documents, label_ids):
     document = documents[0]
     encodings = taskmodule.encode(document, encode_target=True)
     assert_task_encodings(
         task_encodings=encodings,
         expected_documents=[document],
         expected_inputs=[[1, 2, 3, 4, 5, 6, 2, 7, 8]],
-        expected_targets=[taskmodule.label_to_id["Positive"]],
+        expected_targets=[label_ids[0]],
     )
 
 
-def test_encode_multiple_documents(taskmodule, documents):
+def test_encode_multiple_documents(taskmodule, documents, label_ids):
     documents = copy.deepcopy(documents)
     # Following Documents will be discarded with current encode_target() implementation
     documents.extend(
@@ -360,7 +372,6 @@ def test_encode_multiple_documents(taskmodule, documents):
     )
     documents[3].label = []
     encodings = taskmodule.encode(documents, encode_target=True)
-    label_ids = [taskmodule.label_to_id[label] for label in ["Positive", "Negative"]]
     assert_task_encodings(
         task_encodings=encodings,
         expected_documents=documents,
@@ -380,7 +391,7 @@ def test_encode_as_iterator_as_task_encoding_sequence(taskmodule, documents):
     assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as Iterator"
 
 
-def test_encode_as_iterator_as_dataset(taskmodule, documents):
+def test_encode_as_iterator_as_dataset(taskmodule, documents, label_ids):
     encodings_iterator = taskmodule.encode(
         documents,
         encode_target=True,
@@ -389,7 +400,6 @@ def test_encode_as_iterator_as_dataset(taskmodule, documents):
         as_task_encoding_sequence=False,
     )
     assert isinstance(encodings_iterator, IterableTaskEncodingDataset)
-    label_ids = [taskmodule.label_to_id[label] for label in ["Positive", "Negative"]]
     assert_task_encodings(
         task_encodings=encodings_iterator,
         expected_documents=documents,
@@ -412,7 +422,7 @@ def test_encode_as_dataset_as_task_encoding_sequence(taskmodule, documents):
     assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as a dataset"
 
 
-def test_encode_as_dataset(taskmodule, documents):
+def test_encode_as_dataset(taskmodule, documents, label_ids):
     encodings_dataset = taskmodule.encode(
         documents,
         encode_target=True,
@@ -420,7 +430,6 @@ def test_encode_as_dataset(taskmodule, documents):
         as_task_encoding_sequence=False,
     )
     assert isinstance(encodings_dataset, TaskEncodingDataset)
-    label_ids = [taskmodule.label_to_id[label] for label in ["Positive", "Negative"]]
     assert_task_encodings(
         task_encodings=encodings_dataset,
         expected_documents=documents,
