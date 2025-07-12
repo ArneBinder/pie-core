@@ -1,5 +1,8 @@
 import logging
+import sys
+import types
 from typing import List, Optional
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -146,6 +149,32 @@ def test_show_as_markdown(documents, caplog):
         "| min  | 25   |\n"
         "| max  | 44   |"
     ]
+
+
+def test_show_histogram(documents, caplog):
+    # Create a fake plotext module with mocked methods
+    mock_plt = MagicMock()
+    mock_plotext = types.ModuleType("plotext")
+    mock_plotext.hist = mock_plt.hist
+    mock_plotext.title = mock_plt.title
+    mock_plotext.show = mock_plt.show
+    mock_plotext.clear_figure = mock_plt.clear_figure
+
+    # Patch sys.modules to replace plotext with our mock
+    sys.modules["plotext"] = mock_plotext
+
+    # Now run the function that will import plotext
+    statistic = CharacterCountCollector(show_histogram=True)
+    _ = statistic(documents)
+
+    # Assert expected plotext calls
+    assert mock_plt.hist.called
+    mock_plt.title.assert_called_once()
+    mock_plt.show.assert_called_once()
+    mock_plt.clear_figure.assert_called_once()
+
+    # Clean up: remove mock to avoid side effects
+    del sys.modules["plotext"]
 
 
 @pytest.fixture
