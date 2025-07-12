@@ -150,9 +150,10 @@ def test_show_as_markdown(documents, caplog):
 
 
 def test_show_histogram(documents, capsys):
-    # Now run the function that will import plotext
     statistic = CharacterCountCollector(show_histogram=True)
     statistic(documents)
+
+    # get the captured output
     captured = capsys.readouterr()
 
     fixture_file = FIXTURES_ROOT / "statistic" / "show_histogram_plotext.txt"
