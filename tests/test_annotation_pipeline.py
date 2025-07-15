@@ -1,11 +1,11 @@
 import json
-from typing import List, Sequence, Union, overload
+from typing import List, Sequence, Union
 
 from pie_core import AnnotationPipeline, Document, Model
-from tests.fixtures.taskmodules import TestTaskModule
+from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
+from tests.fixtures.types import Label
 
 
-# TODO: Replace with existing Model when tests/model will be merged
 @Model.register("TestPipelineModel")
 class TestModel(Model):
     param: List[int]
@@ -29,25 +29,6 @@ class TestModel(Model):
 
 @AnnotationPipeline.register("TestPipeline")
 class TestAnnotationPipeline(AnnotationPipeline[TestModel, TestTaskModule]):
-
-    @overload
-    def __call__(
-        self,
-        documents: Document,
-        inplace: bool = True,
-        *args,
-        **kwargs,
-    ) -> Document: ...
-
-    @overload
-    def __call__(
-        self,
-        documents: Sequence[Document],
-        inplace: bool = True,
-        *args,
-        **kwargs,
-    ) -> Sequence[Document]: ...
-
     def __call__(
         self, documents: Union[Document, Sequence[Document]], inplace: bool = True, *args, **kwargs
     ) -> Union[Document, Sequence[Document]]:
@@ -55,5 +36,10 @@ class TestAnnotationPipeline(AnnotationPipeline[TestModel, TestTaskModule]):
 
 
 def test_annotation_pipeline() -> None:
-    pipeline = TestAnnotationPipeline()
-    pass
+    doc = TestDocumentWithLabel("ABC")
+    doc.label.append(Label(label="Positive"))
+    model = TestModel()
+    taskmodule = TestTaskModule()
+    pipeline = TestAnnotationPipeline(model=model, taskmodule=taskmodule)
+    pipeline(doc, inplace=True)
+    assert doc.label.predictions.resolve() == []  # Pipeline currently does nothing
