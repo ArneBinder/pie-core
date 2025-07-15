@@ -8,6 +8,7 @@ from typing import Iterable, Iterator, List, Optional, Union
 import pytest
 
 from pie_core import (
+    AutoTaskModule,
     IterableTaskEncodingDataset,
     TaskEncoding,
     TaskEncodingDataset,
@@ -451,6 +452,7 @@ def test_save_pretrained(taskmodule, tmp_path, config_as_json):
 
 def test_from_pretrained(taskmodule):
     from_pretrained_taskmodule = TestTaskModule.from_pretrained(CONFIG_PATH)
+    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
     assert from_pretrained_taskmodule.is_from_pretrained
     assert from_pretrained_taskmodule.is_prepared
     config = {"is_from_pretrained": True}
@@ -461,6 +463,7 @@ def test_from_pretrained(taskmodule):
 def test_save_and_from_pretrained(taskmodule, tmp_path):
     taskmodule.save_pretrained(tmp_path)
     from_pretrained_taskmodule = TestTaskModule.from_pretrained(tmp_path)
+    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
     assert from_pretrained_taskmodule.is_from_pretrained
     config = {"is_from_pretrained": True}
     config.update(taskmodule.config)
@@ -552,3 +555,14 @@ def test_encode_inputs_with_encode_input_returns_list(documents):
             [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
         ],
     )
+
+
+def test_autotaskmodule(taskmodule, tmp_path):
+    taskmodule.save_pretrained(tmp_path)
+    from_pretrained_taskmodule = AutoTaskModule.from_pretrained(tmp_path)
+    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
+    assert from_pretrained_taskmodule.is_from_pretrained
+    assert from_pretrained_taskmodule.is_prepared
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config

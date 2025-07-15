@@ -160,6 +160,12 @@ class TaskModule(
     ) -> Tuple[
         Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]], Sequence[DocumentType]
     ]:
+        """Encode a batch of documents and return task encodings and documents in corresponding
+        order.
+
+        If 'encode_target = True' is passed, target encodings will be assigned to task encodings.
+        Only encodings that got targets will be returned.
+        """
         task_encodings, documents_in_order = self.encode_inputs(
             documents, show_progress=show_progress
         )
@@ -216,6 +222,17 @@ class TaskModule(
         TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
     ]:
+        """Encode document or documents and return TaskEncodings in format specified by parameters.
+
+        Parameters:
+            documents (Iterable[DocumentType]): Document or documents to encode.
+            encode_target (bool, optional): Whether to assign target encodings to task encodings. Defaults to False.
+            document_batch_size (Optional[int], optional): Number of documents to encode in each batch. Defaults to None.
+            as_task_encoding_sequence (Optional[bool], optional): Return type should be a Sequence of TaskEncodings. Defaults to None. If not set - this will be set to True if NOT encoding targets ('encode_target = False').
+            as_iterator (Optional[bool], optional): Return type should be an Iterator. Cannot be used with 'as_task_encoding_sequence'. Defaults to None.
+            as_dataset (bool): Return type should be a Dataset. Cannot be used with 'as_task_encoding_sequence'. Defaults to False.
+            show_progress (bool, optional): Show progress bar. Defaults to False.
+        """
         self.assert_is_prepared()
 
         self.on_encode_start()
@@ -303,6 +320,8 @@ class TaskModule(
         Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         Sequence[DocumentType],
     ]:
+        """Encode a batch of documents and return task encodings and documents in corresponding
+        order."""
         documents_in_order: List[DocumentType] = []
         task_encodings: List[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]] = []
         for document in tqdm(documents, disable=not show_progress, desc="encode inputs"):
@@ -427,6 +446,11 @@ class TaskModule(
         task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         task_outputs: Sequence[TaskOutput],
     ) -> None:
+        """Create annotations from task encodings and respective task outputs.
+
+        The annotations will be attached as predictions to annotation layer(s) of the source
+        document.
+        """
         for task_encoding, task_output in zip(task_encodings, task_outputs):
             self.combine_output(task_encoding, task_output)
 
@@ -435,6 +459,11 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> None:
+        """Create an annotation from task encoding and a task output.
+
+        The annotation will be attached as prediction to respective annotation layer of the source
+        document.
+        """
         for annotation_name, annotation in self.create_annotations_from_output(
             task_encoding, task_output
         ):
