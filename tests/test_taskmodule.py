@@ -560,7 +560,7 @@ def test_encode_inputs_with_encode_input_returns_list(documents):
 def test_autotaskmodule(taskmodule, tmp_path):
     taskmodule.save_pretrained(tmp_path)
     from_pretrained_taskmodule = AutoTaskModule.from_pretrained(tmp_path)
-    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
+    assert type(from_pretrained_taskmodule) is TestTaskModule
     assert from_pretrained_taskmodule.is_from_pretrained
     assert from_pretrained_taskmodule.is_prepared
     config = {"is_from_pretrained": True}
