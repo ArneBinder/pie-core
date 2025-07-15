@@ -7,7 +7,7 @@ from pie_core import Auto, Registrable
 from pie_core.hf_hub_mixin import HFHubMixin
 from tests import FIXTURES_ROOT
 
-CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "auto"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "auto"
 
 
 class TestHFHubMixin(HFHubMixin):
@@ -74,14 +74,14 @@ def test_from_config_with_kwargs_override(config_as_dict):
 
 
 def test_from_pretrained():
-    sub = AutoTest.from_pretrained(CONFIG_PATH)
+    sub = AutoTest.from_pretrained(PRETRAINED_PATH)
     assert isinstance(sub, Sub)
     assert sub.is_from_pretrained
     assert sub.foo == "Test"
 
 
 def test_from_pretrained_with_kwargs_override():
-    sub = AutoTest.from_pretrained(CONFIG_PATH, auto_type="Sub2", foo="Test2")
+    sub = AutoTest.from_pretrained(PRETRAINED_PATH, auto_type="Sub2", foo="Test2")
     assert isinstance(sub, Sub2)
     assert sub.is_from_pretrained
     assert sub.foo == "Test2"

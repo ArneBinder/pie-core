@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
-from huggingface_hub import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
 
 from pie_core.auto import Auto
@@ -58,9 +57,9 @@ class ModelHFHubMixin(HFHubMixin):
     ```
     """
 
-    config_name = CONFIG_NAME
+    config_name = "config.json"
     config_type_key = "model_type"
-    weights_file_name = PYTORCH_WEIGHTS_NAME
+    weights_file_name = "pytorch_model.bin"
 
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a model to a local directory."""

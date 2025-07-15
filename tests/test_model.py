@@ -11,7 +11,7 @@ from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "model"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "model"
 HF_USERNAME = "rainbowrivey"
 HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
 HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
@@ -97,37 +97,6 @@ def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, we
 
 
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
-def test_save_pretrained_push_to_hub_no_repo_id(
-    model, caplog, tmp_path, config_as_json, weights_as_json
-):
-    #   If no repo_id was provided, save_directory will be used instead.
-    # We need to name folder exactly as the Repository Name.
-    #   Token used for this tests should be issued by Repo owner, not anyone else with access,
-    # since repo will be looked up/created under current User's name.
-    #   In this case path also contains Username, which is not necessary, it will be ignored;
-    # But this is a simple solution to make sure folder has the right name if we change repos.
-    path = tmp_path.joinpath(HF_WRITE_PATH)
-    path.mkdir(parents=True, exist_ok=True)
-
-    try:
-        model.save_pretrained(save_directory=path, push_to_hub=True)
-
-        assert path.joinpath(model.config_name).exists()
-        with open(path.joinpath(model.config_name)) as f:
-            file_contents = f.read()
-        assert file_contents == config_as_json
-
-        assert path.joinpath(model.weights_file_name).exists()
-        with open(path.joinpath(model.weights_file_name)) as f:
-            file_contents = f.read()
-        assert file_contents == weights_as_json
-
-    finally:
-        hf_api.delete_file(model.config_name, HF_WRITE_PATH)
-        hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
-
-
-@pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_push_to_hub(model):
     try:
         model.push_to_hub(HF_WRITE_PATH)
@@ -141,9 +110,10 @@ def test_push_to_hub(model):
         hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained(model, config_path):
     pretrained = TestModel.from_pretrained(config_path)
+    assert isinstance(pretrained, TestModel)
     assert pretrained.is_from_pretrained
     assert pretrained.config == model.config
     assert pretrained.param == model.param
@@ -151,21 +121,22 @@ def test_from_pretrained(model, config_path):
 
 def test_save_and_from_pretrained(model, tmp_path) -> None:
     model.save_pretrained(tmp_path)
-    test_model = TestModel.from_pretrained(tmp_path)
-    assert test_model.config == model.config
-    assert test_model.param == model.param
+    pretrained = TestModel.from_pretrained(tmp_path)
+    assert isinstance(pretrained, TestModel)
+    assert pretrained.config == model.config
+    assert pretrained.param == model.param
 
 
 def test_auto_model_from_pretrained(model) -> None:
-    test_model = AutoModel.from_pretrained(CONFIG_PATH)
-    assert isinstance(test_model, TestModel)
-    assert test_model.config == model.config
-    assert test_model.param == model.param
+    pretrained = AutoModel.from_pretrained(PRETRAINED_PATH)
+    assert type(pretrained) is TestModel
+    assert pretrained.config == model.config
+    assert pretrained.param == model.param
 
 
 def test_from_pretrained_warnings(model, caplog) -> None:
     with caplog.at_level(logging.WARNING):
-        TestModel.from_pretrained(CONFIG_PATH, map_location="cpu", strict=False)
+        TestModel.from_pretrained(PRETRAINED_PATH, map_location="cpu", strict=False)
     assert caplog.messages == [
         'map_location is deprecated. Use load_model_file={"map_location": "cpu"} instead.',
         'strict is deprecated. Use load_model_file={"strict": False} instead.',
@@ -177,7 +148,7 @@ def test_config_warning(caplog) -> None:
         pass
 
     unregistered_model = UnregisteredTestModel()
-
+    assert unregistered_model.BASE_CLASS is Model
     with caplog.at_level(logging.WARNING):
         unregistered_model._config()
     assert caplog.messages == [

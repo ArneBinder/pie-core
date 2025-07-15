@@ -10,7 +10,7 @@ from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "hf_hub_mixin"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "hf_hub_mixin"
 HF_USERNAME = "rainbowrivey"
 HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
 HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
@@ -170,9 +170,9 @@ def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path,
 
 
 def test_retrieve_config_file_local():
-    path_to_config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
+    path_to_config, kwargs = HFHubObject.retrieve_config_file(PRETRAINED_PATH)
     assert path_to_config is not None
-    assert path_to_config == str(CONFIG_PATH / "hf_hub_config.json")
+    assert path_to_config == str(PRETRAINED_PATH / "hf_hub_config.json")
 
 
 def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
@@ -195,14 +195,14 @@ def test_retrieve_config_file_hf_wrong_path(caplog):
     assert caplog.messages == [f"{HFHubObject.config_name} not found in HuggingFace Hub."]
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(config_path)
     assert pretrained.is_from_pretrained
     assert pretrained.config == config_as_dict
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained_not_implemented(config_path):
     class Test(HFHubMixin):
         pass
@@ -211,7 +211,7 @@ def test_from_pretrained_not_implemented(config_path):
         Test.from_pretrained(config_path)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained_with_kwargs_override(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(
         config_path, foo="test", hf_hub_type="will_be_discarded"
