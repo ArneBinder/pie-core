@@ -158,3 +158,20 @@ def test_config_warning(caplog) -> None:
         " @Model.register() or @Model.register(name='...') to register it at as a Model"
         " which will allow to load it via AutoModel."
     ]
+
+
+def test_config_warning_no_base_class(caplog) -> None:
+    class UnregisteredTestModelWithNoBaseClass(Model):
+        BASE_CLASS = None
+
+    unregistered_model = UnregisteredTestModelWithNoBaseClass()
+    assert unregistered_model.BASE_CLASS is None
+    with caplog.at_level(logging.WARNING):
+        unregistered_model._config()
+    assert caplog.messages == [
+        "UnregisteredTestModelWithNoBaseClass is not registered. It will not work"
+        " with AutoModel.from_pretrained() or"
+        " AutoModel.from_config(). Consider to annotate the class with"
+        " @Model.register() or @Model.register(name='...') to register it at as a Model"
+        " which will allow to load it via AutoModel."
+    ]
