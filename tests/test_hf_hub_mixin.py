@@ -170,7 +170,7 @@ def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path,
 
 
 def test_retrieve_config_file_local():
-    path_to_config, kwargs = HFHubObject.retrieve_config_file(PRETRAINED_PATH)
+    path_to_config = HFHubObject.retrieve_config_file(PRETRAINED_PATH)
     assert path_to_config is not None
     assert path_to_config == str(PRETRAINED_PATH / "hf_hub_config.json")
 
@@ -184,7 +184,7 @@ def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
 
 
 def test_retrieve_config_file_hf():
-    path_to_config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
+    path_to_config = HFHubObject.retrieve_config_file(HF_PATH)
     assert path_to_config is not None
     assert Path(path_to_config).is_file()
 

@@ -102,8 +102,7 @@ class HFHubProtocol(Protocol):
         local_files_only: bool = False,
         revision: Optional[str] = None,
         fail_silently: bool = False,
-        **remaining_kwargs,
-    ) -> Tuple[Optional[str], Dict[str, Any]]:
+    ) -> Optional[str]:
         """Retrieve the configuration file from the Huggingface Hub or local directory.
 
         Returns None if the config file is not found.
@@ -132,7 +131,7 @@ class HFHubProtocol(Protocol):
                 if not fail_silently:
                     logger.warning(f"{cls.config_name} not found in HuggingFace Hub.")
 
-        return config_file, remaining_kwargs
+        return config_file
 
     @classmethod
     @validate_hf_hub_args
@@ -179,7 +178,7 @@ class HFHubProtocol(Protocol):
         """
         model_id = pretrained_model_name_or_path
 
-        config_file, _ = cls.retrieve_config_file(
+        config_file = cls.retrieve_config_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
