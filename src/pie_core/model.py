@@ -59,7 +59,7 @@ class ModelHFHubMixin(HFHubMixin):
 
     config_name = "config.json"
     config_type_key = "model_type"
-    weights_file_name = "pytorch_model.bin"
+    weights_file_name = "model.bin"
 
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a model to a local directory."""
@@ -84,8 +84,7 @@ class ModelHFHubMixin(HFHubMixin):
         resume_download: bool = False,
         local_files_only: bool = False,
         token: Optional[Union[str, bool]] = None,
-        **remaining_kwargs,
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> str:
         """Retrieve the model file from the Huggingface Hub or local directory."""
         if os.path.isdir(model_id):
             logger.info("Loading weights from local directory")
@@ -103,7 +102,7 @@ class ModelHFHubMixin(HFHubMixin):
                 local_files_only=local_files_only,
             )
 
-        return model_file, remaining_kwargs
+        return model_file
 
     @classmethod
     def _from_pretrained(
@@ -136,7 +135,8 @@ class ModelHFHubMixin(HFHubMixin):
             )
             load_model_file_kwargs["strict"] = strict
 
-        model_file, remaining_kwargs = cls.retrieve_model_file(
+        model = cls.from_config(config=config or {}, **kwargs)
+        model_file = model.retrieve_model_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
@@ -145,9 +145,7 @@ class ModelHFHubMixin(HFHubMixin):
             resume_download=resume_download,
             local_files_only=local_files_only,
             token=token,
-            **kwargs,
         )
-        model = cls.from_config(config=config or {}, **remaining_kwargs)
         # load the model weights
         model.load_model_file(model_file, **load_model_file_kwargs)
 
