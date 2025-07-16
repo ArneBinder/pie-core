@@ -39,11 +39,9 @@ class PreparableMixin:
 
     def _prepare(self, *args, **kwargs) -> None:
         """This method needs to set all attributes listed in PREPARED_ATTRIBUTES."""
-        pass
 
     def _post_prepare(self) -> None:
         """Any code to do further one-time setup, but that requires the prepared attributes."""
-        pass
 
     def assert_is_prepared(self, msg: Optional[str] = None) -> None:
         if not self.is_prepared:
