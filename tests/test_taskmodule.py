@@ -24,7 +24,7 @@ from tests.fixtures.types import Label
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "pretrained" / "taskmodule"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "taskmodule"
 
 
 @pytest.fixture(scope="module")
@@ -451,7 +451,7 @@ def test_save_pretrained(taskmodule, tmp_path, config_as_json):
 
 
 def test_from_pretrained(taskmodule):
-    from_pretrained_taskmodule = TestTaskModule.from_pretrained(CONFIG_PATH)
+    from_pretrained_taskmodule = TestTaskModule.from_pretrained(PRETRAINED_PATH)
     assert isinstance(from_pretrained_taskmodule, TestTaskModule)
     assert from_pretrained_taskmodule.is_from_pretrained
     assert from_pretrained_taskmodule.is_prepared
