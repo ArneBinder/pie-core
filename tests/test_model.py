@@ -128,8 +128,9 @@ def test_save_and_from_pretrained(model, tmp_path) -> None:
     assert pretrained.param == model.param
 
 
-def test_auto_model_from_pretrained(model) -> None:
-    pretrained = AutoModel.from_pretrained(PRETRAINED_PATH)
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
+def test_auto_model_from_pretrained(model, config_path) -> None:
+    pretrained = AutoModel.from_pretrained(config_path)
     assert type(pretrained) is TestModel
     assert pretrained.config == model.config
     assert pretrained.param == model.param
