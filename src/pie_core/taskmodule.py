@@ -25,12 +25,7 @@ from pie_core.metric import EncodingMetric
 from pie_core.module_mixins import WithDocumentTypeMixin
 from pie_core.preparable import PreparableMixin
 from pie_core.registrable import Registrable
-from pie_core.taskencoding import (
-    IterableTaskEncodingDataset,
-    TaskEncoding,
-    TaskEncodingDataset,
-    TaskEncodingSequence,
-)
+from pie_core.taskencoding import TaskEncoding, TaskEncodingSequence
 
 DocumentType = TypeVar("DocumentType", bound=Document)
 InputEncoding = TypeVar("InputEncoding")
@@ -211,7 +206,6 @@ class TaskModule(
         document_batch_size: Optional[int] = None,
         as_task_encoding_sequence: Optional[bool] = None,
         as_iterator: Optional[bool] = None,
-        as_dataset: bool = False,
         show_progress: bool = False,
     ) -> Union[
         Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
@@ -219,8 +213,6 @@ class TaskModule(
             TaskEncoding[DocumentType, InputEncoding, TargetEncoding], DocumentType
         ],
         Iterator[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
-        TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
-        IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
     ]:
         """Encode a single or multiple documents and return a sequence of TaskEncodings:
         objects that hold the model inputs, optionally training targets, and the source document.
@@ -266,8 +258,6 @@ class TaskModule(
                 TaskEncoding[DocumentType, InputEncoding, TargetEncoding], DocumentType
             ],
             Iterator[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
-            TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
-            IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         ]
 
         if as_iterator:
@@ -279,10 +269,7 @@ class TaskModule(
                 batch_size=document_batch_size,
                 show_progress=show_progress,
             )
-            if as_dataset:
-                result = IterableTaskEncodingDataset(encodings=encodings_iterator)
-            else:
-                result = encodings_iterator
+            result = encodings_iterator
         else:
             encodings: List[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]] = []
             documents_in_order: List[DocumentType] = []
@@ -302,8 +289,6 @@ class TaskModule(
                 documents_in_order.extend(cur_documents_in_order)
 
             if as_task_encoding_sequence:
-                if as_dataset:
-                    raise ValueError("can not return a TaskEncodingSequence as a dataset")
                 result = TaskEncodingSequence(
                     task_encodings=encodings,
                     documents_in_order=documents_in_order,
@@ -312,10 +297,7 @@ class TaskModule(
                 # during training, we return only the sequence of task_encodings, because
                 # we don't need the ordering of input documents and also don't re-assign
                 # task encodings to input documents
-                if as_dataset:
-                    result = TaskEncodingDataset(encodings=encodings)
-                else:
-                    result = encodings
+                result = encodings
 
         if not as_iterator:
             self.on_encode_end()
