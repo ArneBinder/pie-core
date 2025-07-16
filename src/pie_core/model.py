@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
-from huggingface_hub import CONFIG_NAME, PYTORCH_WEIGHTS_NAME
 from huggingface_hub.file_download import hf_hub_download
 
 from pie_core.auto import Auto
@@ -16,9 +15,6 @@ TModelHFHubMixin = TypeVar("TModelHFHubMixin", bound="ModelHFHubMixin")
 
 
 class ModelHFHubMixin(HFHubMixin):
-    config_name = CONFIG_NAME
-    config_type_key = "model_type"
-    weights_file_name = PYTORCH_WEIGHTS_NAME
     """Implementation of [`ModelHFHubMixin`] to provide model Hub upload/download capabilities to
     models.
 
@@ -27,15 +23,15 @@ class ModelHFHubMixin(HFHubMixin):
     ```python
     >>> import torch
     >>> import torch.nn as nn
-    >>> from pie_core import PieModelHFHubMixin
+    >>> from pie_core import Model
 
 
-    >>> class MyPytorchModel(nn.Module, PieModelHFHubMixin):
+    >>> class MyModel(Model, nn.Module):
     ...     def __init__(self):
     ...         super().__init__()
     ...         self.param = nn.Parameter(torch.rand(3, 4))
     ...         self.linear = nn.Linear(4, 5)
-
+    ...
     ...     def forward(self, x):
     ...         return self.linear(x + self.param)
     ...
@@ -60,6 +56,10 @@ class ModelHFHubMixin(HFHubMixin):
     >>> model = MyModel.from_pretrained("username/my-awesome-model")
     ```
     """
+
+    config_name = "config.json"
+    config_type_key = "model_type"
+    weights_file_name = "pytorch_model.bin"
 
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a model to a local directory."""
@@ -126,13 +126,13 @@ class ModelHFHubMixin(HFHubMixin):
         if "map_location" in kwargs:
             map_location = kwargs.pop("map_location")
             logger.warning(
-                f'map_location is deprecated. Use load_model_file=\\{"map_location": "{map_location}"\\} instead.'
+                f'map_location is deprecated. Use load_model_file={{"map_location": "{map_location}"}} instead.'
             )
             load_model_file_kwargs["map_location"] = map_location
         if "strict" in kwargs:
             strict = kwargs.pop("strict")
             logger.warning(
-                f'strict is deprecated. Use load_model_file=\\{"strict": {strict}\\} instead.'
+                f'strict is deprecated. Use load_model_file={{"strict": {strict}}} instead.'
             )
             load_model_file_kwargs["strict"] = strict
 
@@ -158,11 +158,14 @@ class Model(ModelHFHubMixin, Registrable["Model"]):
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        if self.has_base_class():
+        if (
+            self.has_base_class()
+            and self.base_class().registered_name_for_class(self.__class__) is not None
+        ):
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
             logger.warning(
-                f"{self.__class__.__name__} does not have a base class. It will not work"
+                f"{self.__class__.__name__} is not registered. It will not work"
                 " with AutoModel.from_pretrained() or"
                 " AutoModel.from_config(). Consider to annotate the class with"
                 " @Model.register() or @Model.register(name='...') to register it at as a Model"
