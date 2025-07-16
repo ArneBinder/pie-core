@@ -27,6 +27,7 @@ hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 @Model.register()
 class TestModel(Model):
+    weights_file_name = "model.json"
     param: List[int]
 
     def __init__(self, param=None, **kwargs):

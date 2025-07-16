@@ -136,7 +136,8 @@ class ModelHFHubMixin(HFHubMixin):
             )
             load_model_file_kwargs["strict"] = strict
 
-        model_file, remaining_kwargs = cls.retrieve_model_file(
+        model = cls.from_config(config=config or {}, **kwargs)
+        model_file, remaining_kwargs = model.retrieve_model_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
@@ -145,11 +146,10 @@ class ModelHFHubMixin(HFHubMixin):
             resume_download=resume_download,
             local_files_only=local_files_only,
             token=token,
-            **kwargs,
+            **load_model_file_kwargs,
         )
-        model = cls.from_config(config=config or {}, **remaining_kwargs)
         # load the model weights
-        model.load_model_file(model_file, **load_model_file_kwargs)
+        model.load_model_file(model_file, **remaining_kwargs)
 
         return model
 
