@@ -222,15 +222,25 @@ class TaskModule(
         TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
     ]:
-        """Encode document or documents and return TaskEncodings in format specified by parameters.
+        """Encode a single or multiple documents and return a sequence of TaskEncodings:
+        objects that hold the model inputs, optionally training targets, and the source document.
 
         Parameters:
             documents (Iterable[DocumentType]): Document or documents to encode.
-            encode_target (bool, optional): Whether to assign target encodings to task encodings. Defaults to False.
-            document_batch_size (Optional[int], optional): Number of documents to encode in each batch. Defaults to None.
-            as_task_encoding_sequence (Optional[bool], optional): Return type should be a Sequence of TaskEncodings. Defaults to None. If not set - this will be set to True if NOT encoding targets ('encode_target = False').
-            as_iterator (Optional[bool], optional): Return type should be an Iterator. Cannot be used with 'as_task_encoding_sequence'. Defaults to None.
-            as_dataset (bool): Return type should be a Dataset. Cannot be used with 'as_task_encoding_sequence'. Defaults to False.
+            encode_target (bool, optional): Whether to create target encodings. Defaults to False.
+            document_batch_size (Optional[int], optional): If provided, encode documents in batches of
+                document_batch_size, otherwise use self.encode_document_batch_size. Defaults to None.
+            as_task_encoding_sequence (Optional[bool], optional): Whether to return a TaskEncodingSequence,
+                a wrapper around a sequence of TaskEncodings that also holds the documents in the order
+                they were encoded.
+            Return type should be a Sequence
+                of TaskEncodings. Defaults to None. If not set - this will be set to True if NOT
+                encoding targets ('encode_target = False').
+            as_iterator (Optional[bool], optional): Whether to return an iterator over the
+                TaskEncodings instead of a sequence. If not set, this will be set to True if
+                documents is an iterable (i.e. not a Sequence). Defaults to None.
+            as_dataset (bool): Return type should be a Dataset. Cannot be used with
+                'as_task_encoding_sequence'. Defaults to False.
             show_progress (bool, optional): Show progress bar. Defaults to False.
         """
         self.assert_is_prepared()
