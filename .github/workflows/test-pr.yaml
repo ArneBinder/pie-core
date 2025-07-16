@@ -1,9 +1,7 @@
-
+# Run tests excluding ones marked as 'slow'
 name: Tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main, "release/*"]
 
