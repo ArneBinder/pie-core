@@ -119,6 +119,7 @@ def test_save_pretrained_not_implemented(tmp_path):
         Test().save_pretrained(save_directory=tmp_path)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_json):
     try:
@@ -141,6 +142,7 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
         hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path, config_as_json):
     #   If no repo_id was provided, save_directory will be used instead.
@@ -222,6 +224,7 @@ def test_from_pretrained_with_kwargs_override(config_as_dict, config_path):
     assert pretrained.config == config
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_push_to_hub(hf_hub_object, config_as_dict):
     try:

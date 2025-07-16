@@ -77,6 +77,7 @@ def test_save_pretrained(model, tmp_path, config_as_json, weights_as_json) -> No
         assert f.read() == weights_as_json
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, weights_as_json):
     try:
@@ -97,6 +98,7 @@ def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, we
         hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_push_to_hub(model):
     try:
