@@ -84,7 +84,7 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
         else:
             # otherwise:
             # 1. try to retrieve the taskmodule config file
-            taskmodule_config_file, _ = cls.auto_taskmodule_class.retrieve_config_file(
+            taskmodule_config_file = cls.auto_taskmodule_class.retrieve_config_file(
                 model_id=model_id,
                 force_download=force_download,
                 resume_download=resume_download,
