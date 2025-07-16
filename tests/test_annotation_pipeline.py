@@ -2,7 +2,7 @@ import json
 from typing import List, Sequence, Union
 
 from pie_core import AnnotationPipeline, Document, Model
-from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
+from tests.fixtures.taskmodule import TestDocumentWithLabel, TestTaskModule
 from tests.fixtures.types import Label
 
 
