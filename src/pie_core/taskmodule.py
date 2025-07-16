@@ -102,11 +102,14 @@ class TaskModule(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        if self.has_base_class():
+        if (
+            self.has_base_class()
+            and self.base_class().registered_name_for_class(self.__class__) is not None
+        ):
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
             logger.warning(
-                f"{self.__class__.__name__} does not have a base class. It will not work "
+                f"{self.__class__.__name__} is not registered. It will not work "
                 "with AutoTaskModule.from_pretrained() or "
                 "AutoTaskModule.from_config(). Consider to annotate the class with "
                 "@TaskModule.register() or @TaskModule.register(name='...') "
@@ -157,6 +160,12 @@ class TaskModule(
     ) -> Tuple[
         Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]], Sequence[DocumentType]
     ]:
+        """Encode a batch of documents and return task encodings and documents in corresponding
+        order.
+
+        If 'encode_target = True' is passed, target encodings will be assigned to task encodings.
+        Only encodings that got targets will be returned.
+        """
         task_encodings, documents_in_order = self.encode_inputs(
             documents, show_progress=show_progress
         )
@@ -213,6 +222,27 @@ class TaskModule(
         TaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         IterableTaskEncodingDataset[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
     ]:
+        """Encode a single or multiple documents and return a sequence of TaskEncodings:
+        objects that hold the model inputs, optionally training targets, and the source document.
+
+        Parameters:
+            documents (Iterable[DocumentType]): Document or documents to encode.
+            encode_target (bool, optional): Whether to create target encodings. Defaults to False.
+            document_batch_size (Optional[int], optional): If provided, encode documents in batches of
+                document_batch_size, otherwise use self.encode_document_batch_size. Defaults to None.
+            as_task_encoding_sequence (Optional[bool], optional): Whether to return a TaskEncodingSequence,
+                a wrapper around a sequence of TaskEncodings that also holds the documents in the order
+                they were encoded.
+            Return type should be a Sequence
+                of TaskEncodings. Defaults to None. If not set - this will be set to True if NOT
+                encoding targets ('encode_target = False').
+            as_iterator (Optional[bool], optional): Whether to return an iterator over the
+                TaskEncodings instead of a sequence. If not set, this will be set to True if
+                documents is an iterable (i.e. not a Sequence). Defaults to None.
+            as_dataset (bool): Return type should be a Dataset. Cannot be used with
+                'as_task_encoding_sequence'. Defaults to False.
+            show_progress (bool, optional): Show progress bar. Defaults to False.
+        """
         self.assert_is_prepared()
 
         self.on_encode_start()
@@ -300,6 +330,8 @@ class TaskModule(
         Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         Sequence[DocumentType],
     ]:
+        """Encode a batch of documents and return task encodings and documents in corresponding
+        order."""
         documents_in_order: List[DocumentType] = []
         task_encodings: List[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]] = []
         for document in tqdm(documents, disable=not show_progress, desc="encode inputs"):
@@ -330,7 +362,8 @@ class TaskModule(
             Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         ]
     ]:
-        pass
+        """Create one or multiple task encodings including the model inputs from a given
+        document."""
 
     def encode_targets(
         self,
@@ -361,7 +394,13 @@ class TaskModule(
         self,
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
     ) -> Optional[TargetEncoding]:
-        pass
+        """Create a training target for a model input (which is wrapped in a task encoding). May
+        return None, in which case the task encoding will not be included in a training batch
+        (i.e., it will be excluded from training).
+
+        This may use the model inputs, data (text, annotations, etc.) of the underlying document,
+        or any other metadata attached to the task encoding in encode input.
+        """
 
     @abstractmethod
     def unbatch_output(self, model_output: ModelBatchOutput) -> Sequence[TaskOutput]:
@@ -371,7 +410,6 @@ class TaskModule(
         This is in preparation to generate a list of all model outputs that has the same length as
         all model inputs.
         """
-        pass
 
     def decode(
         self,
@@ -418,6 +456,11 @@ class TaskModule(
         task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
         task_outputs: Sequence[TaskOutput],
     ) -> None:
+        """Create annotations from task encodings and respective task outputs.
+
+        The annotations will be attached as predictions to annotation layer(s) of the source
+        document.
+        """
         for task_encoding, task_output in zip(task_encodings, task_outputs):
             self.combine_output(task_encoding, task_output)
 
@@ -426,6 +469,11 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> None:
+        """Create an annotation from task encoding and a task output.
+
+        The annotation will be attached as prediction to respective annotation layer of the source
+        document.
+        """
         for annotation_name, annotation in self.create_annotations_from_output(
             task_encoding, task_output
         ):
@@ -437,13 +485,18 @@ class TaskModule(
         task_encoding: TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
         task_output: TaskOutput,
     ) -> Iterator[Tuple[str, Annotation]]:
-        pass
+        """Create annotations from a task output (a single model prediction) and the respective
+        task encoding (including model inputs and the source document). The annotations will be
+        attached as predictions to annotation layer(s) of the source document.
+
+        The method has to yield tuples (annotation_layer_name, annotation).
+        """
 
     @abstractmethod
     def collate(
         self, task_encodings: Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]]
     ) -> TaskBatchEncoding:
-        pass
+        """Convert a list of task encodings to a batch that will be passed to the model."""
 
     def configure_model_metric(
         self, stage: str

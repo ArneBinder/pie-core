@@ -7,12 +7,12 @@ from pie_core import Auto, Registrable
 from pie_core.hf_hub_mixin import HFHubMixin
 from tests import FIXTURES_ROOT
 
-CONFIG_PATH = FIXTURES_ROOT / "configs"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "auto"
 
 
 class TestHFHubMixin(HFHubMixin):
-    config_name: str = "test_config.json"
-    config_type_key: str = "test_type"
+    config_name: str = "auto_config.json"
+    config_type_key: str = "auto_type"
 
     @classmethod
     def _from_pretrained(
@@ -58,7 +58,7 @@ class AutoTest(TestHFHubMixin, Auto[Test]):
 
 @pytest.fixture(scope="module")
 def config_as_dict() -> Dict[str, Any]:
-    return {"test_type": "Sub", "foo": "Test"}
+    return {"auto_type": "Sub", "foo": "Test"}
 
 
 def test_from_config(config_as_dict):
@@ -68,20 +68,20 @@ def test_from_config(config_as_dict):
 
 
 def test_from_config_with_kwargs_override(config_as_dict):
-    sub = AutoTest.from_config(config=config_as_dict, test_type="Sub2", foo="Test2")
+    sub = AutoTest.from_config(config=config_as_dict, auto_type="Sub2", foo="Test2")
     assert isinstance(sub, Sub2)
     assert sub.foo == "Test2"
 
 
 def test_from_pretrained():
-    sub = AutoTest.from_pretrained(CONFIG_PATH)
+    sub = AutoTest.from_pretrained(PRETRAINED_PATH)
     assert isinstance(sub, Sub)
     assert sub.is_from_pretrained
     assert sub.foo == "Test"
 
 
 def test_from_pretrained_with_kwargs_override():
-    sub = AutoTest.from_pretrained(CONFIG_PATH, test_type="Sub2", foo="Test2")
+    sub = AutoTest.from_pretrained(PRETRAINED_PATH, auto_type="Sub2", foo="Test2")
     assert isinstance(sub, Sub2)
     assert sub.is_from_pretrained
     assert sub.foo == "Test2"

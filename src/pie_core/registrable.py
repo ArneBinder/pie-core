@@ -73,6 +73,20 @@ class RegistrableProtocol(Protocol[T2]):
                 )
 
             registry[register_name] = subclass
+
+            # raise an error if the subclass already has a BASE_CLASS different from cls
+            if (
+                hasattr(subclass, "BASE_CLASS")
+                and subclass.BASE_CLASS is not None
+                and subclass.BASE_CLASS is not cls
+            ):
+                raise RegistrationError(
+                    f"{subclass.__name__} already has a BASE_CLASS set to {subclass.BASE_CLASS.__name__}. "
+                    "Please remove the BASE_CLASS attribute or use a different name for the registration."
+                )
+
+            subclass.BASE_CLASS = cls  # Set the base class for the subclass
+
             return subclass
 
         return add_subclass_to_registry

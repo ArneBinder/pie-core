@@ -135,6 +135,26 @@ def test_register_wrapper_target_name_already_registered():
     assert str(e.value) == "Cannot register Bus as Sub; name already in use for Sub"
 
 
+def test_register_wrapper_wrong_base_class(caplog):
+    class Base(Registrable):
+        pass
+
+    @Base.register()
+    class Sub(Base):
+        pass
+
+    with pytest.raises(RegistrationError) as e:
+
+        @Base.register()
+        class Sub2(Base):
+            BASE_CLASS = Sub
+
+    assert str(e.value) == (
+        "Sub2 already has a BASE_CLASS set to Sub. "
+        "Please remove the BASE_CLASS attribute or use a different name for the registration."
+    )
+
+
 def test_by_name():
     assert A.by_name("B") == B
 

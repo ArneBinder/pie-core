@@ -1,10 +1,30 @@
 import copy
+import json
+import logging
+import os
 from collections.abc import Generator, Sequence
+from typing import Iterable, Iterator, List, Optional, Union
 
 import pytest
 
-from tests.fixtures.taskmodules import TestDocumentWithLabel, TestTaskModule
+from pie_core import (
+    AutoTaskModule,
+    IterableTaskEncodingDataset,
+    TaskEncoding,
+    TaskEncodingDataset,
+)
+from pie_core.taskmodule import (
+    DocumentType,
+    InputEncoding,
+    TargetEncoding,
+)
+from tests import FIXTURES_ROOT
+from tests.fixtures.taskmodule import TestDocumentWithLabel, TestTaskModule
 from tests.fixtures.types import Label
+
+logger = logging.getLogger(__name__)
+
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "taskmodule"
 
 
 @pytest.fixture(scope="module")
@@ -46,13 +66,33 @@ def taskmodule(unprepared_taskmodule, documents) -> TestTaskModule:
     return unprepared_taskmodule
 
 
-def test_prepare(taskmodule) -> None:
+@pytest.fixture(scope="module")
+def label_ids(taskmodule, documents) -> List[int]:
+    return [taskmodule.label_to_id[label.label] for doc in documents for label in doc.label]
+
+
+def test_label_ids(taskmodule, label_ids) -> None:
+    assert label_ids == [2, 1]  # Positive for doc1, Negative for doc2
+    assert [taskmodule.id_to_label[label_id] for label_id in label_ids] == [
+        "Positive",
+        "Negative",
+    ]
+
+
+@pytest.fixture(scope="module")
+def config_as_dict() -> dict:
+    return {"taskmodule_type": "TestTaskModule", "labels": ["Negative", "Positive"]}
+
+
+@pytest.fixture(scope="module")
+def config_as_json(config_as_dict) -> str:
+    return json.dumps(config_as_dict, indent=2)
+
+
+def test_prepare(taskmodule, config_as_dict) -> None:
     assert taskmodule is not None
     assert taskmodule.is_prepared
-    assert taskmodule.config == {
-        "taskmodule_type": "TestTaskModule",
-        "labels": ["Negative", "Positive"],
-    }
+    assert taskmodule.config == config_as_dict
     assert_is_post_prepared(taskmodule)
 
 
@@ -236,3 +276,293 @@ def test_decode(task_outputs, taskmodule, documents, inplace) -> None:
     ]
     assert labels_resolved == [["Positive"], ["Negative"]]
     assert labels_predictions_resolved == [["Negative"], ["O"]]
+
+
+def test_from_config_unregistered_taskmodule(documents, caplog):
+    # Unregistered test class
+    class UnregisteredTaskModule(TestTaskModule):
+        pass
+
+    unregistered_taskmodule = UnregisteredTaskModule()
+    unregistered_taskmodule.prepare(documents)
+    assert (
+        unregistered_taskmodule.base_class().registered_name_for_class(UnregisteredTaskModule)
+        is None
+    )
+
+    with caplog.at_level(logging.WARNING):
+        unregistered_taskmodule._config()
+    assert caplog.messages == [
+        "UnregisteredTaskModule is not registered. It will not work "
+        "with AutoTaskModule.from_pretrained() or "
+        "AutoTaskModule.from_config(). Consider to annotate the class with "
+        "@TaskModule.register() or @TaskModule.register(name='...') "
+        "to register it as a TaskModule which will allow to load it via AutoTaskModule."
+    ]
+
+
+def assert_task_encodings(
+    task_encodings: Iterable[TaskEncoding],
+    expected_documents: Optional[List],
+    expected_inputs: List[List[int]],
+    expected_targets: Optional[List[int]] = None,
+) -> None:
+    for idx, task_encoding in enumerate(task_encodings):
+        assert task_encoding.inputs == expected_inputs[idx]
+        if expected_targets is not None:
+            assert task_encoding.targets == expected_targets[idx]
+        else:
+            assert not task_encoding.has_targets
+        assert task_encoding.document == expected_documents[idx]
+
+        assert task_encoding.metadata == {}
+
+
+@pytest.mark.parametrize(
+    ["batch_size", "encode_target", "show_progress"], [[None, False, False], [1, True, True]]
+)
+def test_encoding_iterator(
+    documents, label_ids, taskmodule, batch_size, encode_target, show_progress, caplog
+):
+    encodings_iterator = taskmodule._encoding_iterator(
+        documents, encode_target=encode_target, batch_size=batch_size, show_progress=show_progress
+    )
+    assert isinstance(encodings_iterator, Iterator)
+
+    assert_task_encodings(
+        task_encodings=encodings_iterator,
+        expected_documents=documents,
+        expected_inputs=[
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+        ],
+        expected_targets=label_ids if encode_target else None,
+    )
+
+    if batch_size is not None and show_progress:
+        assert caplog.messages == [
+            "do not show document encoding progress because we encode lazily with an iterator"
+        ]
+
+
+def test_encode_single_document(taskmodule, documents, label_ids):
+    document = documents[0]
+    encodings = taskmodule.encode(document, encode_target=True)
+    assert_task_encodings(
+        task_encodings=encodings,
+        expected_documents=[document],
+        expected_inputs=[[1, 2, 3, 4, 5, 6, 2, 7, 8]],
+        expected_targets=[label_ids[0]],
+    )
+
+
+def test_encode_multiple_documents(taskmodule, documents, label_ids):
+    documents = copy.deepcopy(documents)
+    # Following Documents will be discarded with current encode_target() implementation
+    documents.extend(
+        [
+            TestDocumentWithLabel(text="Some text with empty labels list"),
+            TestDocumentWithLabel(text="Some other text with no label"),
+        ]
+    )
+    # And a document with no text that will be discarded by encode_input()
+    documents.extend(
+        [
+            TestDocumentWithLabel(text=""),
+        ]
+    )
+    documents[3].label = []
+    encodings = taskmodule.encode(documents, encode_target=True)
+    assert_task_encodings(
+        task_encodings=encodings,
+        expected_documents=documents,
+        expected_inputs=[
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+        ],
+        expected_targets=label_ids,
+    )
+
+
+def test_encode_as_iterator_as_task_encoding_sequence(taskmodule, documents):
+    with pytest.raises(ValueError) as excinfo:
+        taskmodule.encode(
+            documents, encode_target=False, as_iterator=True, as_task_encoding_sequence=True
+        )
+    assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as Iterator"
+
+
+def test_encode_as_iterator_as_dataset(taskmodule, documents, label_ids):
+    encodings_iterator = taskmodule.encode(
+        documents,
+        encode_target=True,
+        as_iterator=True,
+        as_dataset=True,
+        as_task_encoding_sequence=False,
+    )
+    assert isinstance(encodings_iterator, IterableTaskEncodingDataset)
+    assert_task_encodings(
+        task_encodings=encodings_iterator,
+        expected_documents=documents,
+        expected_inputs=[
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+        ],
+        expected_targets=label_ids,
+    )
+
+
+def test_encode_as_dataset_as_task_encoding_sequence(taskmodule, documents):
+    with pytest.raises(ValueError) as excinfo:
+        taskmodule.encode(
+            documents,
+            encode_target=False,
+            as_dataset=True,
+            as_task_encoding_sequence=True,
+        )
+    assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as a dataset"
+
+
+def test_encode_as_dataset(taskmodule, documents, label_ids):
+    encodings_dataset = taskmodule.encode(
+        documents,
+        encode_target=True,
+        as_dataset=True,
+        as_task_encoding_sequence=False,
+    )
+    assert isinstance(encodings_dataset, TaskEncodingDataset)
+    assert_task_encodings(
+        task_encodings=encodings_dataset,
+        expected_documents=documents,
+        expected_inputs=[
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+        ],
+        expected_targets=label_ids,
+    )
+
+
+def test_save_pretrained(taskmodule, tmp_path, config_as_json):
+    taskmodule.save_pretrained(tmp_path)
+    assert os.path.exists(tmp_path / "taskmodule_config.json")
+    with open(tmp_path / "taskmodule_config.json") as f:
+        config = f.read()
+    assert config == config_as_json
+
+
+def test_from_pretrained(taskmodule):
+    from_pretrained_taskmodule = TestTaskModule.from_pretrained(PRETRAINED_PATH)
+    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
+    assert from_pretrained_taskmodule.is_from_pretrained
+    assert from_pretrained_taskmodule.is_prepared
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config
+
+
+def test_save_and_from_pretrained(taskmodule, tmp_path):
+    taskmodule.save_pretrained(tmp_path)
+    from_pretrained_taskmodule = TestTaskModule.from_pretrained(tmp_path)
+    assert isinstance(from_pretrained_taskmodule, TestTaskModule)
+    assert from_pretrained_taskmodule.is_from_pretrained
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config
+
+
+def test_encode_inputs_with_encode_input_returns_none() -> None:
+    class NoneOrListEncoderTaskModule(TestTaskModule):
+        """This taskmodules encode_input() returns either an empty List or None.
+
+        We need to test how encode_inputs() handles both cases.
+        """
+
+        def encode_input(
+            self,
+            document: DocumentType,
+        ) -> Optional[
+            Union[
+                TaskEncoding[DocumentType, InputEncoding, TargetEncoding],
+                Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]],
+            ]
+        ]:
+            if document.text == "":
+                return None
+            else:
+                return []
+
+    # set labels to mitigate calling prepare()
+    taskmodule = NoneOrListEncoderTaskModule(labels=[])
+    documents = [TestDocumentWithLabel(""), TestDocumentWithLabel("ABC")]
+    task_encodings_empty = taskmodule.encode(documents=documents)
+    assert_task_encodings(
+        task_encodings=task_encodings_empty,
+        expected_documents=documents,
+        expected_inputs=[],
+        expected_targets=[],
+    )
+
+
+def test_decode_targets_as_list(task_outputs, taskmodule, documents) -> None:
+    # create a copy of the documents to not modify the original documents
+    task_encodings = taskmodule.encode(
+        documents, encode_target=False, as_task_encoding_sequence=False
+    )
+    assert isinstance(task_encodings, List)
+
+    docs_with_predictions = taskmodule.decode(task_encodings, task_outputs, inplace=False)
+
+    # check annotations
+    labels_resolved = [doc.label.resolve() for doc in documents]
+    labels_predictions_resolved = [
+        doc_with_pred.label.predictions.resolve() for doc_with_pred in docs_with_predictions
+    ]
+    assert labels_resolved == [["Positive"], ["Negative"]]
+    assert labels_predictions_resolved == [["Negative"], ["O"]]
+
+
+def test_configure_model_metric(taskmodule, caplog):
+    with caplog.at_level(logging.WARNING):
+        assert taskmodule.configure_model_metric("Test") is None
+    assert caplog.messages == [
+        "TaskModule TestTaskModule does not implement a model metric. "
+        "Override configure_model_metric(stage: str) to configure a metric for stage 'Test'."
+    ]
+
+
+def test_encode_inputs_with_encode_input_returns_list(documents):
+    class DoubledEncodingTaskModule(TestTaskModule):
+        """With encode_input() returns each encoding twice."""
+
+        def encode_input(
+            self, document: DocumentType
+        ) -> Optional[Sequence[TaskEncoding[DocumentType, InputEncoding, TargetEncoding]]]:
+            """Create one or multiple task encodings for the given document."""
+
+            task_encoding = super().encode_input(document)
+            return [task_encoding, task_encoding]
+
+    taskmodule = DoubledEncodingTaskModule()
+    taskmodule.prepare(documents)
+    encodings = taskmodule.encode(documents=documents, encode_target=False)
+    assert_task_encodings(
+        task_encodings=encodings,
+        expected_documents=[documents[0], documents[0], documents[1], documents[1]],
+        expected_inputs=[
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [1, 2, 3, 4, 5, 6, 2, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
+        ],
+    )
+
+
+def test_autotaskmodule(taskmodule, tmp_path):
+    taskmodule.save_pretrained(tmp_path)
+    from_pretrained_taskmodule = AutoTaskModule.from_pretrained(tmp_path)
+    assert type(from_pretrained_taskmodule) is TestTaskModule
+    assert from_pretrained_taskmodule.is_from_pretrained
+    assert from_pretrained_taskmodule.is_prepared
+    config = {"is_from_pretrained": True}
+    config.update(taskmodule.config)
+    assert from_pretrained_taskmodule.config == config

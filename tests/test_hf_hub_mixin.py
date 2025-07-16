@@ -10,7 +10,7 @@ from tests import FIXTURES_ROOT
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = FIXTURES_ROOT / "configs"
+PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "hf_hub_mixin"
 HF_USERNAME = "rainbowrivey"
 HF_PATH = f"{HF_USERNAME}/HF_Hub_Test"
 HF_WRITE_PATH = f"{HF_USERNAME}/HF_Hub_Write_Test"
@@ -26,7 +26,7 @@ hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 class HFHubObject(HFHubMixin):
     config_name = "hf_hub_config.json"
-    config_type_key = "hf_hub_config_type"
+    config_type_key = "hf_hub_type"
 
     def __init__(self, *args, foo: Optional[str] = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -138,7 +138,7 @@ def test_save_pretrained_push_to_hub(hf_hub_object, caplog, tmp_path, config_as_
         assert file_contents == config_as_json
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
@@ -166,13 +166,13 @@ def test_save_pretrained_push_to_hub_no_repo_id(hf_hub_object, caplog, tmp_path,
         assert file_contents == config_as_json
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 def test_retrieve_config_file_local():
-    path_to_config, kwargs = HFHubObject.retrieve_config_file(CONFIG_PATH)
+    path_to_config = HFHubObject.retrieve_config_file(PRETRAINED_PATH)
     assert path_to_config is not None
-    assert path_to_config == str(CONFIG_PATH / "hf_hub_config.json")
+    assert path_to_config == str(PRETRAINED_PATH / "hf_hub_config.json")
 
 
 def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
@@ -184,7 +184,7 @@ def test_retrieve_config_file_local_wrong_path(caplog, tmp_path):
 
 
 def test_retrieve_config_file_hf():
-    path_to_config, kwargs = HFHubObject.retrieve_config_file(HF_PATH)
+    path_to_config = HFHubObject.retrieve_config_file(HF_PATH)
     assert path_to_config is not None
     assert Path(path_to_config).is_file()
 
@@ -195,14 +195,14 @@ def test_retrieve_config_file_hf_wrong_path(caplog):
     assert caplog.messages == [f"{HFHubObject.config_name} not found in HuggingFace Hub."]
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(config_path)
     assert pretrained.is_from_pretrained
     assert pretrained.config == config_as_dict
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained_not_implemented(config_path):
     class Test(HFHubMixin):
         pass
@@ -211,10 +211,10 @@ def test_from_pretrained_not_implemented(config_path):
         Test.from_pretrained(config_path)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG_PATH, HF_PATH])
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
 def test_from_pretrained_with_kwargs_override(config_as_dict, config_path):
     pretrained = HFHubObject.from_pretrained(
-        config_path, foo="test", hf_hub_config_type="will_be_discarded"
+        config_path, foo="test", hf_hub_type="will_be_discarded"
     )
     assert pretrained.is_from_pretrained
     config = config_as_dict.copy()
@@ -231,7 +231,7 @@ def test_push_to_hub(hf_hub_object, config_as_dict):
         assert pretrained.config == config_as_dict
 
     finally:
-        hf_api.delete_file("hf_hub_config.json", HF_WRITE_PATH)
+        hf_api.delete_file(hf_hub_object.config_name, HF_WRITE_PATH)
 
 
 def test_from_config(hf_hub_object):
@@ -241,7 +241,7 @@ def test_from_config(hf_hub_object):
 
 def test_from_config_with_kwargs_override(hf_hub_object):
     new_hf_hub_object = HFHubObject.from_config(
-        config=hf_hub_object.config, foo="test", hf_hub_config_type="will_be_discarded"
+        config=hf_hub_object.config, foo="test", hf_hub_type="will_be_discarded"
     )
     config = hf_hub_object.config.copy()
     config.update(foo="test")
