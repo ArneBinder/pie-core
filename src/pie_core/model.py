@@ -59,7 +59,7 @@ class ModelHFHubMixin(HFHubMixin):
 
     config_name = "config.json"
     config_type_key = "model_type"
-    weights_file_name = "pytorch_model.bin"
+    weights_file_name = "model.bin"
 
     def save_model_file(self, model_file: str) -> None:
         """Save weights from a model to a local directory."""
