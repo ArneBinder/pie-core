@@ -146,10 +146,9 @@ class ModelHFHubMixin(HFHubMixin):
             resume_download=resume_download,
             local_files_only=local_files_only,
             token=token,
-            **load_model_file_kwargs,
         )
         # load the model weights
-        model.load_model_file(model_file, **remaining_kwargs)
+        model.load_model_file(model_file, **load_model_file_kwargs)
 
         return model
 
