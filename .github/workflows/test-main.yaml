@@ -1,9 +1,10 @@
-# Run tests excluding ones marked as 'slow'
-name: Tests
+# Same as `tests.yaml` but triggered on commit to main branch
+# and runs all tests including marked as 'slow' when pushing to main
+name: Tests Main
 
 on:
-  pull_request:
-    branches: [main, "release/*"]
+  push:
+    branches: [main]
 
 jobs:
   tests:
@@ -68,7 +69,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           source .venv/bin/activate
-          HF_TOKEN=${{ secrets.HF_TEST_REPO_TOKEN }} pytest -m "not slow" --cov --cov-report term-missing --cov-report xml:coverage.xml
+          HF_TOKEN=${{ secrets.HF_TEST_REPO_TOKEN }} pytest -m "" --cov --cov-report term-missing --cov-report xml:coverage.xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
