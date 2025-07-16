@@ -84,8 +84,7 @@ class ModelHFHubMixin(HFHubMixin):
         resume_download: bool = False,
         local_files_only: bool = False,
         token: Optional[Union[str, bool]] = None,
-        **remaining_kwargs,
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> str:
         """Retrieve the model file from the Huggingface Hub or local directory."""
         if os.path.isdir(model_id):
             logger.info("Loading weights from local directory")
@@ -103,7 +102,7 @@ class ModelHFHubMixin(HFHubMixin):
                 local_files_only=local_files_only,
             )
 
-        return model_file, remaining_kwargs
+        return model_file
 
     @classmethod
     def _from_pretrained(
@@ -137,7 +136,7 @@ class ModelHFHubMixin(HFHubMixin):
             load_model_file_kwargs["strict"] = strict
 
         model = cls.from_config(config=config or {}, **kwargs)
-        model_file, remaining_kwargs = model.retrieve_model_file(
+        model_file = model.retrieve_model_file(
             model_id=model_id,
             revision=revision,
             cache_dir=cache_dir,
