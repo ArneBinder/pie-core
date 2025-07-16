@@ -1,0 +1,7 @@
+{
+  "taskmodule_type": "TestTaskModule",
+  "labels": [
+    "Negative",
+    "Positive"
+  ]
+}
