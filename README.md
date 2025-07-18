@@ -5,8 +5,8 @@
 <a href="https://github.com/ArneBinder/pytorch-ie"><img alt="PyTorch-IE" src="https://img.shields.io/badge/-PyTorch--IE-017F2F?style=flat&logo=github&labelColor=gray"></a><br>
 
 [![PyPI](https://img.shields.io/pypi/v/pie-core.svg)][pypi status]
-[![Tests](https://github.com/arnebinder/pie-core/workflows/Tests/badge.svg)][tests]
-[![Codecov](https://codecov.io/gh/arnebinder/pie-core/branch/main/graph/badge.svg)][codecov]
+[![Tests](https://github.com/ArneBinder/pie-core/workflows/Tests/badge.svg)][tests]
+[![Codecov](https://codecov.io/gh/ArneBinder/pie-core/branch/main/graph/badge.svg)][codecov]
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
 
@@ -87,7 +87,7 @@ pytest --cov --cov-report term-missing
 - Third-party licenses and attributions are listed in [`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
 
 [black]: https://github.com/psf/black
-[codecov]: https://app.codecov.io/gh/arnebinder/pie-core
+[codecov]: https://app.codecov.io/gh/ArneBinder/pie-core
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [pypi status]: https://pypi.org/project/pie-core/
-[tests]: https://github.com/arnebinder/pie-core/actions?workflow=Tests
+[tests]: https://github.com/ArneBinder/pie-core/actions?workflow=Tests
