@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, Iterable, Optional, TypeVar, Union
+from typing import Any, Generic, Iterable, TypeVar, overload
 
 from pie_core.document import Document
 from pie_core.module_mixins import WithDocumentTypeMixin
@@ -12,16 +14,26 @@ class DocumentMetric(ABC, WithDocumentTypeMixin, Generic[T]):
 
     def __init__(self) -> None:
         self.reset()
-        self._current_split: Optional[str] = None
+        self._current_split: str | None = None
 
     @abstractmethod
     def reset(self) -> None:
         """Any reset logic that needs to be performed before the metric is called again."""
 
+    @overload
+    def __call__(self, document_or_collection: Document | Iterable[Document]) -> T: ...
+
+    @overload
+    def __call__(
+        self, document_or_collection: dict[str, Document] | dict[str, Iterable[Document]]
+    ) -> dict[str, T]: ...
+
     def __call__(
         self,
-        document_or_collection: Union[Iterable[Document], Document, Dict[str, Iterable[Document]]],
-    ) -> Union[Dict[str, T], T]:
+        document_or_collection: (
+            Document | Iterable[Document] | dict[str, Document] | dict[str, Iterable[Document]]
+        ),
+    ) -> dict[str, T] | T:
         """This method is called to update the metric with a document or collection of documents.
 
         If a collection is passed, the metric is also computed and the result is returned. If the
@@ -33,7 +45,7 @@ class DocumentMetric(ABC, WithDocumentTypeMixin, Generic[T]):
             self._update(document_or_collection)
             return self.compute(reset=False)
         elif isinstance(document_or_collection, dict):
-            result: Dict[str, T] = {}
+            result: dict[str, T] = {}
             for split_name, split in document_or_collection.items():
                 self._current_split = split_name
                 self.reset()
@@ -70,7 +82,7 @@ class DocumentMetric(ABC, WithDocumentTypeMixin, Generic[T]):
         """This method is called to get the metric values."""
 
     @property
-    def current_split(self) -> Optional[str]:
+    def current_split(self) -> str | None:
         """The current split that is being processed."""
         return self._current_split
 
