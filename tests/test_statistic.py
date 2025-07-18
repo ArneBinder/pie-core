@@ -79,9 +79,7 @@ def test_selfbuilt_aggregated_funtion(documents):
 
 def test_selfbuilt_invalid_funtion(documents):
     with pytest.raises(ImportError) as error:
-        statistic = CharacterCountCollector(
-            aggregation_functions=["tests.test_statistic.invalid_function"]
-        )
+        CharacterCountCollector(aggregation_functions=["tests.test_statistic.invalid_function"])
     assert "Cannot resolve aggregation function: tests.test_statistic.invalid_function" in str(
         error.value
     )
@@ -89,7 +87,7 @@ def test_selfbuilt_invalid_funtion(documents):
 
 class NotCollector(DocumentStatistic):
 
-    def _collect(self, doc: Document) -> None:
+    def _collect(self, doc: Document) -> list:
         return []
 
 
@@ -101,7 +99,7 @@ def test_NotCollector(documents):
 
 class ListCharacterCountCollector(DocumentStatistic):
 
-    def _collect(self, doc: Document) -> int:
+    def _collect(self, doc: Document) -> list[int]:
         return [factor * len(doc.text) for factor in range(5)]
 
 
@@ -121,7 +119,7 @@ def test_aggregated_function_with_lists(documents):
 
 class DictCharacterCountCollector(DocumentStatistic):
 
-    def _collect(self, doc: Document) -> int:
+    def _collect(self, doc: Document) -> dict:
         return {char: doc.text.count(char) for char in "aeiou"}
 
 
@@ -147,7 +145,7 @@ def test_aggregated_function_with_dicts(documents):
 
 class DictVowelIndecesCollector(DocumentStatistic):
 
-    def _collect(self, doc: Document) -> int:
+    def _collect(self, doc: Document) -> dict:
         result = {}
         for idx, char in enumerate(doc.text):
             if char in "aeiou":
@@ -184,7 +182,7 @@ def test_aggregated_function_with_dicts_of_lists(documents):
 def test_show_as_markdown(documents, caplog):
     statistic = CharacterCountCollector(show_as_markdown=True)
     with caplog.at_level(logging.INFO):
-        values = statistic(documents)
+        statistic(documents)
 
     assert caplog.messages == [
         "CharacterCountCollector (2 documents)\n"
@@ -200,7 +198,7 @@ def test_show_as_markdown(documents, caplog):
 def test_show_as_markdown_with_multi_index(documents, caplog):
     statistic = DictVowelIndecesCollector(show_as_markdown=True)
     with caplog.at_level(logging.INFO):
-        values = statistic(documents)
+        statistic(documents)
 
     assert caplog.messages == [
         "DictVowelIndecesCollector (2 documents)\n"
@@ -232,8 +230,8 @@ def test_show_histogram(documents, capsys):
 
 
 @pytest.fixture
-def collection(documents):
-    return {"test": documents[0], "train": documents[1]}
+def collection(documents) -> dict[str, list[Document]]:
+    return {"test": [documents[0]], "train": [documents[1]]}
 
 
 def test_collection_as_input(collection):
