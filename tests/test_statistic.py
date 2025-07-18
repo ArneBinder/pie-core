@@ -87,6 +87,18 @@ def test_selfbuilt_invalid_funtion(documents):
     )
 
 
+class NotCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> None:
+        return []
+
+
+def test_NotCollector(documents):
+    statistic = NotCollector()
+    values = statistic(documents)
+    assert values == {"mean": None, "std": None, "min": None, "max": None}
+
+
 class ListCharacterCountCollector(DocumentStatistic):
 
     def _collect(self, doc: Document) -> int:
