@@ -133,6 +133,42 @@ def test_aggregated_function_with_dicts(documents):
     assert values == {"median": 44, "all": True, "tests.test_statistic.calculate_product": 1100}
 
 
+class DictVowelIndecesCollector(DocumentStatistic):
+
+    def _collect(self, doc: Document) -> int:
+        result = {}
+        for idx, char in enumerate(doc.text):
+            if char in "aeiou":
+                result.setdefault(char, []).append(idx)
+        return result
+
+
+def test_DictVowelIndecesCollector(documents):
+    statistic = DictVowelIndecesCollector()
+    values = statistic(documents)
+    assert values == {
+        "e": {"mean": 16.0, "std": 12.505998560690786, "min": 2, "max": 33},
+        "u": {"mean": 13.0, "std": 8.0, "min": 5, "max": 21},
+        "i": {"mean": 6.0, "std": 0.0, "min": 6, "max": 6},
+        "o": {"mean": 22.8, "std": 10.146920715172657, "min": 12, "max": 41},
+        "a": {"mean": 20.0, "std": 10.173494974687902, "min": 9, "max": 36},
+    }
+
+
+def test_aggregated_function_with_dicts_of_lists(documents):
+    statistic = DictVowelIndecesCollector(
+        aggregation_functions=["median", "all", "tests.test_statistic.calculate_product"]
+    )
+    values = statistic(documents)
+    assert values == {
+        "e": {"median": 13, "all": True, "tests.test_statistic.calculate_product": 96096},
+        "u": {"median": 21, "all": True, "tests.test_statistic.calculate_product": 105},
+        "i": {"median": 6, "all": True, "tests.test_statistic.calculate_product": 36},
+        "o": {"median": 18, "all": True, "tests.test_statistic.calculate_product": 3914352},
+        "a": {"median": 21, "all": True, "tests.test_statistic.calculate_product": 95256},
+    }
+
+
 def test_show_as_markdown(documents, caplog):
     statistic = CharacterCountCollector(show_as_markdown=True)
     with caplog.at_level(logging.INFO):
