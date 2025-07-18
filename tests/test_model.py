@@ -27,6 +27,7 @@ hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
 
 @Model.register()
 class TestModel(Model):
+    weights_file_name = "model.json"
     param: List[int]
 
     def __init__(self, param=None, **kwargs):
@@ -76,6 +77,7 @@ def test_save_pretrained(model, tmp_path, config_as_json, weights_as_json) -> No
         assert f.read() == weights_as_json
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, weights_as_json):
     try:
@@ -96,6 +98,7 @@ def test_save_pretrained_push_to_hub(model, caplog, tmp_path, config_as_json, we
         hf_api.delete_file(model.weights_file_name, HF_WRITE_PATH)
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not hf_has_write_access, reason=HF_NO_ACCESS_MSG)
 def test_push_to_hub(model):
     try:
@@ -127,8 +130,9 @@ def test_save_and_from_pretrained(model, tmp_path) -> None:
     assert pretrained.param == model.param
 
 
-def test_auto_model_from_pretrained(model) -> None:
-    pretrained = AutoModel.from_pretrained(PRETRAINED_PATH)
+@pytest.mark.parametrize("config_path", [PRETRAINED_PATH, HF_PATH])
+def test_auto_model_from_pretrained(model, config_path) -> None:
+    pretrained = AutoModel.from_pretrained(config_path)
     assert type(pretrained) is TestModel
     assert pretrained.config == model.config
     assert pretrained.param == model.param
