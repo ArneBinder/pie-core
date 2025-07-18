@@ -185,6 +185,23 @@ def test_show_as_markdown(documents, caplog):
     ]
 
 
+def test_show_as_markdown_with_multi_index(documents, caplog):
+    statistic = DictVowelIndecesCollector(show_as_markdown=True)
+    with caplog.at_level(logging.INFO):
+        values = statistic(documents)
+
+    assert caplog.messages == [
+        "DictVowelIndecesCollector (2 documents)\n"
+        "|    |   max |   mean |   min |    std |\n"
+        "|:---|------:|-------:|------:|-------:|\n"
+        "| a  |    36 |   20   |     9 | 10.173 |\n"
+        "| e  |    33 |   16   |     2 | 12.506 |\n"
+        "| i  |     6 |    6   |     6 |  0     |\n"
+        "| o  |    41 |   22.8 |    12 | 10.147 |\n"
+        "| u  |    21 |   13   |     5 |  8     |"
+    ]
+
+
 def test_show_histogram(documents, capsys):
     statistic = CharacterCountCollector(show_histogram=True)
     statistic(documents)
