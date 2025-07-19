@@ -1,13 +1,12 @@
-import json
 import logging
 import os
-from typing import List
 
 import pytest
 from huggingface_hub import HfApi
 
 from pie_core import AutoModel, Model
 from tests import FIXTURES_ROOT
+from tests.fixtures.model import TestModel
 
 logger = logging.getLogger(__name__)
 
@@ -23,28 +22,6 @@ HF_NO_ACCESS_MSG = (
 
 hf_api = HfApi()
 hf_has_write_access = hf_api.repo_exists(HF_WRITE_PATH)
-
-
-@Model.register()
-class TestModel(Model):
-    weights_file_name = "model.json"
-    param: List[int]
-
-    def __init__(self, param=None, **kwargs):
-        super().__init__(**kwargs)
-        if param is None:
-            param = [0, 0, 0]
-        self.param = param
-
-    def save_model_file(self, model_file: str) -> None:
-        state_dict = {"param": self.param}
-        json.dump(state_dict, open(model_file, "w"), indent=2)
-
-    def load_model_file(
-        self, model_file: str, map_location: str = "cpu", strict: bool = False
-    ) -> None:
-        state_dict = json.load(open(model_file))
-        self.param = state_dict["param"]
 
 
 @pytest.fixture
