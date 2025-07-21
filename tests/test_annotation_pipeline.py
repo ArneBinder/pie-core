@@ -245,3 +245,11 @@ def test_config_pipeline_not_registered(model, taskmodule, caplog) -> None:
         " to register it as an AnnotationPipeline which will allow to load it via"
         " AutoAnnotationPipeline."
     ]
+
+
+def test_from_pretrained_pass_kwargs(documents, model, taskmodule, caplog) -> None:
+    pipeline = TestAnnotationPipeline.from_pretrained(
+        PRETRAINED_PATH, taskmodule={"labels": ["label"]}, model={"param": [1, 1, 1]}
+    )
+    output_documents = pipeline(documents, inplace=False)
+    assert_pipeline_output(documents, output_documents, False)
