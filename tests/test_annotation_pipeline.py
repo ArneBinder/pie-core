@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 from typing import Sequence, Union
 
@@ -163,3 +165,83 @@ def test_auto_annotation_pipeline_from_pretrained(
 
     output_documents = pipeline(documents, inplace=inplace)
     assert_pipeline_output(documents, output_documents, inplace=inplace)
+
+
+def test_from_pretrained_deprecated_kwargs(caplog) -> None:
+    with caplog.at_level(logging.WARNING):
+        TestAnnotationPipeline.from_pretrained(
+            PRETRAINED_PATH, taskmodule_kwargs={}, model_kwargs={}
+        )
+    assert caplog.messages == [
+        "taskmodule_kwargs is deprecated. Use taskmodule instead.",
+        "model_kwargs is deprecated. Use model instead.",
+    ]
+
+
+def test_from_pretrained_pass_model_and_taskmodule(documents, model, taskmodule) -> None:
+    pipeline = TestAnnotationPipeline.from_pretrained(
+        PRETRAINED_PATH, taskmodule=taskmodule, model=model
+    )
+    assert isinstance(pipeline, TestAnnotationPipeline)
+    assert pipeline.taskmodule == taskmodule
+    assert pipeline.model == model
+
+    output_documents = pipeline(documents, inplace=False)
+    assert_pipeline_output(documents, output_documents, False)
+
+
+def test_from_pretrained_no_taskmodule(documents, caplog, tmp_path) -> None:
+    # tmp_path contains pretrained annotation pipeline except for taskmodule
+    # it is assumed that taskmodule is included into model in this case
+    os.symlink(PRETRAINED_PATH / "config.json", tmp_path / "config.json")
+    os.symlink(PRETRAINED_PATH / "model.json", tmp_path / "model.json")
+    os.symlink(PRETRAINED_PATH / "pipeline_config.json", tmp_path / "pipeline_config.json")
+
+    pipeline = TestAnnotationPipeline.from_pretrained(tmp_path)
+    with pytest.raises(
+        ValueError, match="The taskmodule is None and the model does not contain a taskmodule."
+    ):
+        pipeline(documents, inplace=False)
+
+
+def test_from_pretrained_taskmodule_in_model(documents, taskmodule, tmp_path) -> None:
+    os.symlink(PRETRAINED_PATH / "model.json", tmp_path / "model.json")
+    os.symlink(PRETRAINED_PATH / "pipeline_config.json", tmp_path / "pipeline_config.json")
+
+    model_with_taskmodule = {
+        "model_type": "TestModel",
+        "taskmodule": {"taskmodule_type": "TestTaskModule", "labels": ["Negative", "Positive"]},
+    }
+
+    with open(tmp_path / "config.json", "w") as f:
+        json.dump(model_with_taskmodule, f, indent=2)
+
+    pipeline = TestAnnotationPipeline.from_pretrained(tmp_path)
+    output_documents = pipeline(documents, inplace=False)
+    assert_pipeline_output(documents, output_documents, False)
+
+
+def test_setters(documents, model, taskmodule) -> None:
+    pipeline = TestAnnotationPipeline(model=None)
+    pipeline.model = model
+    pipeline.taskmodule = taskmodule
+
+    output_documents = pipeline(documents, inplace=False)
+    assert_pipeline_output(documents, output_documents, False)
+
+
+def test_config_pipeline_not_registered(model, taskmodule, caplog) -> None:
+    class UnregisteredPipeline(TestAnnotationPipeline):
+        pass
+
+    unregistered_pipeline = UnregisteredPipeline(model=model, taskmodule=taskmodule)
+    with caplog.at_level(logging.WARNING):
+        unregistered_pipeline._config()
+    assert caplog.messages == [
+        "UnregisteredPipeline is not registered. It will not work"
+        " with AutoAnnotationPipeline.from_pretrained() or"
+        " AutoAnnotationPipeline.from_config(). Consider to annotate the class with"
+        " @AnnotationPipeline.register() or @AnnotationPipeline.register(name='...')"
+        " to register it as an AnnotationPipeline which will allow to load it via"
+        " AutoAnnotationPipeline."
+    ]
