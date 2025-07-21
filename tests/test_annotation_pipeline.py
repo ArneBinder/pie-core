@@ -75,7 +75,7 @@ def model() -> TestModel:
 def assert_pipeline_output(
     documents: Union[Document, Sequence[Document]],
     output_documents: Union[Document, Sequence[Document]],
-    inplace,
+    inplace: bool = True,
 ) -> None:
     assert type(output_documents) is type(documents)
     if inplace:
@@ -107,15 +107,12 @@ def test_annotation_pipeline_single_document(documents, model, taskmodule, inpla
     assert output_documents.label.predictions.resolve() == ["Positive"]
 
 
-@pytest.mark.parametrize("inplace", [True, False])
-def test_annotation_pipeline_taskmodule_passed_in_model(
-    documents, model, taskmodule, inplace
-) -> None:
+def test_annotation_pipeline_taskmodule_passed_in_model(documents, model, taskmodule) -> None:
     model.taskmodule = taskmodule
     pipeline = TestAnnotationPipeline(model=model)
-    output_documents = pipeline(documents, inplace=inplace)
+    output_documents = pipeline(documents)
 
-    assert_pipeline_output(documents, output_documents, inplace)
+    assert_pipeline_output(documents, output_documents)
 
 
 def test_save_pretrained(documents, model, taskmodule, tmp_path) -> None:
@@ -137,11 +134,10 @@ def test_from_pretrained(documents) -> None:
     assert isinstance(pipeline.model, TestModel)
 
     output_documents = pipeline(documents)
-    assert_pipeline_output(documents, output_documents, True)
+    assert_pipeline_output(documents, output_documents)
 
 
-@pytest.mark.parametrize("inplace", [True, False])
-def test_save_and_from_pretrained(documents, model, taskmodule, tmp_path, inplace) -> None:
+def test_save_and_from_pretrained(documents, model, taskmodule, tmp_path) -> None:
     pipeline = TestAnnotationPipeline(model=model, taskmodule=taskmodule)
     pipeline.save_pretrained(tmp_path)
     from_pretrained_pipeline = TestAnnotationPipeline.from_pretrained(tmp_path)
@@ -150,21 +146,18 @@ def test_save_and_from_pretrained(documents, model, taskmodule, tmp_path, inplac
     assert isinstance(from_pretrained_pipeline.taskmodule, TestTaskModule)
     assert isinstance(from_pretrained_pipeline.model, TestModel)
 
-    output_documents = from_pretrained_pipeline(documents, inplace=inplace)
-    assert_pipeline_output(documents, output_documents, inplace=inplace)
+    output_documents = from_pretrained_pipeline(documents)
+    assert_pipeline_output(documents, output_documents)
 
 
-@pytest.mark.parametrize("inplace", [True, False])
-def test_auto_annotation_pipeline_from_pretrained(
-    documents, model, taskmodule, tmp_path, inplace
-) -> None:
+def test_auto_annotation_pipeline_from_pretrained(documents, model, taskmodule, tmp_path) -> None:
     pipeline = AutoAnnotationPipeline.from_pretrained(PRETRAINED_PATH)
     assert type(pipeline) is TestAnnotationPipeline
     assert type(pipeline.taskmodule) is TestTaskModule
     assert type(pipeline.model) is TestModel
 
-    output_documents = pipeline(documents, inplace=inplace)
-    assert_pipeline_output(documents, output_documents, inplace=inplace)
+    output_documents = pipeline(documents)
+    assert_pipeline_output(documents, output_documents)
 
 
 def test_from_pretrained_deprecated_kwargs(caplog) -> None:
@@ -217,8 +210,8 @@ def test_from_pretrained_taskmodule_in_model(documents, taskmodule, tmp_path) ->
         json.dump(model_with_taskmodule, f, indent=2)
 
     pipeline = TestAnnotationPipeline.from_pretrained(tmp_path)
-    output_documents = pipeline(documents, inplace=False)
-    assert_pipeline_output(documents, output_documents, False)
+    output_documents = pipeline(documents)
+    assert_pipeline_output(documents, output_documents)
 
 
 def test_setters(documents, model, taskmodule) -> None:
@@ -226,8 +219,8 @@ def test_setters(documents, model, taskmodule) -> None:
     pipeline.model = model
     pipeline.taskmodule = taskmodule
 
-    output_documents = pipeline(documents, inplace=False)
-    assert_pipeline_output(documents, output_documents, False)
+    output_documents = pipeline(documents)
+    assert_pipeline_output(documents, output_documents)
 
 
 def test_config_pipeline_not_registered(model, taskmodule, caplog) -> None:
@@ -260,5 +253,5 @@ def test_from_pretrained_pass_kwargs(documents, model, taskmodule, caplog) -> No
     assert pipeline.taskmodule.labels == ["None", "Positive", "Negative"]
     assert pipeline.model.foo == "bar"
 
-    output_documents = pipeline(documents, inplace=False)
-    assert_pipeline_output(documents, output_documents, False)
+    output_documents = pipeline(documents)
+    assert_pipeline_output(documents, output_documents)
