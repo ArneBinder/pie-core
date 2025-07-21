@@ -91,7 +91,6 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
                 proxies=proxies,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
-                **(taskmodule_or_taskmodule_kwargs or {}),
             )
             # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
             if taskmodule_config_file is not None:

@@ -249,7 +249,16 @@ def test_config_pipeline_not_registered(model, taskmodule, caplog) -> None:
 
 def test_from_pretrained_pass_kwargs(documents, model, taskmodule, caplog) -> None:
     pipeline = TestAnnotationPipeline.from_pretrained(
-        PRETRAINED_PATH, taskmodule={"labels": ["label"]}, model={"param": [1, 1, 1]}
+        PRETRAINED_PATH,
+        taskmodule={"labels": ["None", "Positive", "Negative"]},
+        model={"foo": "bar"},
     )
+    assert isinstance(pipeline, TestAnnotationPipeline)
+    assert isinstance(pipeline.taskmodule, TestTaskModule)
+    assert isinstance(pipeline.model, TestModel)
+
+    assert pipeline.taskmodule.labels == ["None", "Positive", "Negative"]
+    assert pipeline.model.foo == "bar"
+
     output_documents = pipeline(documents, inplace=False)
     assert_pipeline_output(documents, output_documents, False)

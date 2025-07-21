@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from typing_extensions import TypeAlias
 
@@ -13,9 +13,12 @@ ModelOutputType: TypeAlias = Dict[str, Any]
 class TestModel(Model):
     weights_file_name = "model.json"
     param: List[int]
+    foo: Optional[str]
 
-    def __init__(self, param=None, taskmodule=None, **kwargs):
+    def __init__(self, param=None, taskmodule=None, foo=None, **kwargs):
         super().__init__(**kwargs)
+        if foo is not None:
+            self.foo = foo
         if param is None:
             param = [0, 0, 0]
         self.param = param
