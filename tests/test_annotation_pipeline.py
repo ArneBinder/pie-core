@@ -184,7 +184,7 @@ def test_from_pretrained_pass_model_and_taskmodule(documents, model, taskmodule)
 
 
 def test_from_pretrained_no_taskmodule(documents, caplog, tmp_path) -> None:
-    # tmp_path contains pretrained annotation pipeline except for taskmodule
+    # We symlink pretrained annotation pipeline configs except for taskmodule into tmp_path
     # it is assumed that taskmodule is included into model in this case
     os.symlink(PRETRAINED_PATH / "config.json", tmp_path / "config.json")
     os.symlink(PRETRAINED_PATH / "model.json", tmp_path / "model.json")
@@ -200,7 +200,7 @@ def test_from_pretrained_no_taskmodule(documents, caplog, tmp_path) -> None:
 def test_from_pretrained_taskmodule_in_model(documents, taskmodule, tmp_path) -> None:
     os.symlink(PRETRAINED_PATH / "model.json", tmp_path / "model.json")
     os.symlink(PRETRAINED_PATH / "pipeline_config.json", tmp_path / "pipeline_config.json")
-
+    # use custom model config including a taskmodule.
     model_with_taskmodule = {
         "model_type": "TestModel",
         "taskmodule": {"taskmodule_type": "TestTaskModule", "labels": ["Negative", "Positive"]},
