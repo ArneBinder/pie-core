@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Protocol, Type, TypeVar, Union
 
 import requests
 from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT

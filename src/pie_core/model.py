@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
 from huggingface_hub.file_download import hf_hub_download
