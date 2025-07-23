@@ -304,47 +304,27 @@ class HFHubProtocol(Protocol):
         repo_id: str,
         *,
         config: Optional[dict] = None,
-        commit_message: str = "Push model using huggingface_hub.",
-        private: bool = False,
         api_endpoint: Optional[str] = None,
-        token: Optional[str] = None,
-        branch: Optional[str] = None,
-        create_pr: Optional[bool] = None,
-        allow_patterns: Optional[Union[List[str], str]] = None,
-        ignore_patterns: Optional[Union[List[str], str]] = None,
-        delete_patterns: Optional[Union[List[str], str]] = None,
+        private: bool = False,
+        token: Union[bool, str, None] = None,
+        **upload_folder_kwargs,
     ) -> str:
         """Upload model checkpoint to the Hub.
 
-        Use `allow_patterns` and `ignore_patterns` to precisely filter which files should be pushed to the hub. Use
-        `delete_patterns` to delete existing remote files in the same commit. See [`upload_folder`] reference for more
-        details.
-
+        See [`upload_folder`] reference for more details.
 
         Args:
             repo_id (`str`):
                 ID of the repository to push to (example: `"username/my-model"`).
             config (`dict`, *optional*):
                 Configuration object to be saved alongside the model weights.
-            commit_message (`str`, *optional*):
-                Message to commit while pushing.
-            private (`bool`, *optional*, defaults to `False`):
-                Whether the repository created should be private.
             api_endpoint (`str`, *optional*):
                 The API endpoint to use when pushing the model to the hub.
+            private (`bool`, *optional*, defaults to `False`):
+                Whether the repository created should be private.
             token (`str`, *optional*):
                 The token to use as HTTP bearer authorization for remote files. By default, it will use the token
                 cached when running `huggingface-cli login`.
-            branch (`str`, *optional*):
-                The git branch on which to push the model. This defaults to `"main"`.
-            create_pr (`boolean`, *optional*):
-                Whether or not to create a Pull Request from `branch` with that commit. Defaults to `False`.
-            allow_patterns (`List[str]` or `str`, *optional*):
-                If provided, only files matching at least one pattern are pushed.
-            ignore_patterns (`List[str]` or `str`, *optional*):
-                If provided, files matching any of the patterns are not pushed.
-            delete_patterns (`List[str]` or `str`, *optional*):
-                If provided, remote files matching any of the patterns will be deleted from the repo.
 
         Returns:
             The url of the commit of your model in the given repository.
@@ -360,12 +340,7 @@ class HFHubProtocol(Protocol):
                 repo_id=repo_id,
                 repo_type="model",
                 folder_path=saved_path,
-                commit_message=commit_message,
-                revision=branch,
-                create_pr=create_pr,
-                allow_patterns=allow_patterns,
-                ignore_patterns=ignore_patterns,
-                delete_patterns=delete_patterns,
+                **upload_folder_kwargs,
             )
 
     @classmethod
