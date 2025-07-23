@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Type, Union
 
 import pytest
+from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
 
 from pie_core import Auto, Registrable
 from pie_core.hf_hub_mixin import HFHubMixin
@@ -19,13 +20,21 @@ class TestHFHubMixin(HFHubMixin):
         cls: Type[HFHubMixin],
         *,
         model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Optional[Union[str, bool]],
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
+        revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         config: Optional[dict] = None,
         **kwargs,
     ) -> HFHubMixin:

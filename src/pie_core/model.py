@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
+from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
 from huggingface_hub.file_download import hf_hub_download
 
 from pie_core.auto import Auto
@@ -77,13 +78,7 @@ class ModelHFHubMixin(HFHubMixin):
     def retrieve_model_file(
         cls,
         model_id: str,
-        revision: Optional[str] = None,
-        cache_dir: Optional[Union[str, Path]] = None,
-        force_download: bool = False,
-        proxies: Optional[Dict] = None,
-        resume_download: bool = False,
-        local_files_only: bool = False,
-        token: Optional[Union[str, bool]] = None,
+        **hub_download_kwargs: Any,
     ) -> str:
         """Retrieve the model file from the Huggingface Hub or local directory."""
         if os.path.isdir(model_id):
@@ -93,13 +88,7 @@ class ModelHFHubMixin(HFHubMixin):
             model_file = hf_hub_download(
                 repo_id=model_id,
                 filename=cls.weights_file_name,
-                revision=revision,
-                cache_dir=cache_dir,
-                force_download=force_download,
-                proxies=proxies,
-                resume_download=resume_download,
-                token=token,
-                local_files_only=local_files_only,
+                **hub_download_kwargs,
             )
 
         return model_file
@@ -109,13 +98,21 @@ class ModelHFHubMixin(HFHubMixin):
         cls: Type[TModelHFHubMixin],
         *,
         model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
+        revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         config: Optional[dict] = None,
         load_model_file: Optional[Dict[str, Any]] = None,
         **kwargs,
@@ -138,13 +135,21 @@ class ModelHFHubMixin(HFHubMixin):
         model = cls.from_config(config=config or {}, **kwargs)
         model_file = model.retrieve_model_file(
             model_id=model_id,
+            subfolder=subfolder,
+            repo_type=repo_type,
             revision=revision,
+            library_name=library_name,
+            library_version=library_version,
             cache_dir=cache_dir,
+            local_dir=local_dir,
+            user_agent=user_agent,
             force_download=force_download,
             proxies=proxies,
-            resume_download=resume_download,
-            local_files_only=local_files_only,
+            etag_timeout=etag_timeout,
             token=token,
+            local_files_only=local_files_only,
+            headers=headers,
+            endpoint=endpoint,
         )
         # load the model weights
         model.load_model_file(model_file, **load_model_file_kwargs)
