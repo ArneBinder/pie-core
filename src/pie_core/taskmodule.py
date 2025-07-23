@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
 from tqdm import tqdm
 
 from pie_core.auto import Auto
@@ -58,13 +59,21 @@ class TaskModuleHFHubMixin(HFHubMixin):
         cls: Type[TTaskModuleHFHubMixin],
         *,
         model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
+        revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         config: Optional[dict] = None,
         **kwargs,
     ) -> TTaskModuleHFHubMixin:

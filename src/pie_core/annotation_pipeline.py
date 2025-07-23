@@ -13,6 +13,8 @@ from typing import (
     overload,
 )
 
+from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
+
 from pie_core.auto import Auto
 from pie_core.document import Document
 from pie_core.hf_hub_mixin import HFHubMixin
@@ -43,13 +45,21 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
         cls: Type[TAnnotationPipelineHFHubMixin],
         *,
         model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Union[str, bool, None],
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
+        revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         config: Optional[dict] = None,
         **kwargs,
     ) -> TAnnotationPipelineHFHubMixin:
@@ -70,11 +80,21 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
             # otherwise, create a new Model instance via AutoModel
             model = cls.auto_model_class.from_pretrained(
                 pretrained_model_name_or_path=model_id,
-                force_download=force_download,
-                resume_download=resume_download,
-                proxies=proxies,
+                subfolder=subfolder,
+                repo_type=repo_type,
+                revision=revision,
+                library_name=library_name,
+                library_version=library_version,
                 cache_dir=cache_dir,
+                local_dir=local_dir,
+                user_agent=user_agent,
+                force_download=force_download,
+                proxies=proxies,
+                etag_timeout=etag_timeout,
+                token=token,
                 local_files_only=local_files_only,
+                headers=headers,
+                endpoint=endpoint,
                 **(model_or_model_kwargs or {}),
             )
 
@@ -86,21 +106,41 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
             # 1. try to retrieve the taskmodule config file
             taskmodule_config_file = cls.auto_taskmodule_class.retrieve_config_file(
                 model_id=model_id,
-                force_download=force_download,
-                resume_download=resume_download,
-                proxies=proxies,
+                subfolder=subfolder,
+                repo_type=repo_type,
+                revision=revision,
+                library_name=library_name,
+                library_version=library_version,
                 cache_dir=cache_dir,
+                local_dir=local_dir,
+                user_agent=user_agent,
+                force_download=force_download,
+                proxies=proxies,
+                etag_timeout=etag_timeout,
+                token=token,
                 local_files_only=local_files_only,
+                headers=headers,
+                endpoint=endpoint,
             )
             # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
             if taskmodule_config_file is not None:
                 taskmodule = cls.auto_taskmodule_class.from_pretrained(
                     pretrained_model_name_or_path=model_id,
-                    force_download=force_download,
-                    resume_download=resume_download,
-                    proxies=proxies,
+                    subfolder=subfolder,
+                    repo_type=repo_type,
+                    revision=revision,
+                    library_name=library_name,
+                    library_version=library_version,
                     cache_dir=cache_dir,
+                    local_dir=local_dir,
+                    user_agent=user_agent,
+                    force_download=force_download,
+                    proxies=proxies,
+                    etag_timeout=etag_timeout,
+                    token=token,
                     local_files_only=local_files_only,
+                    headers=headers,
+                    endpoint=endpoint,
                     **(taskmodule_or_taskmodule_kwargs or {}),
                 )
             # 3. Otherwise, do not load a taskmodule.

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, Tuple, Type, TypeVar, Union
 
 import requests
+from huggingface_hub.constants import DEFAULT_ETAG_TIMEOUT
 from huggingface_hub.file_download import hf_hub_download
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import SoftTemporaryDirectory, validate_hf_hub_args
@@ -94,14 +95,8 @@ class HFHubProtocol(Protocol):
     def retrieve_config_file(
         cls,
         model_id: Union[str, Path],
-        force_download: bool = False,
-        resume_download: bool = False,
-        proxies: Optional[Dict] = None,
-        token: Optional[Union[str, bool]] = None,
-        cache_dir: Optional[Union[str, Path]] = None,
-        local_files_only: bool = False,
-        revision: Optional[str] = None,
         fail_silently: bool = False,
+        **hub_download_kwargs: Any,
     ) -> Optional[str]:
         """Retrieve the configuration file from the Huggingface Hub or local directory.
 
@@ -117,15 +112,7 @@ class HFHubProtocol(Protocol):
         elif isinstance(model_id, str):
             try:
                 config_file = hf_hub_download(
-                    repo_id=str(model_id),
-                    filename=cls.config_name,
-                    revision=revision,
-                    cache_dir=cache_dir,
-                    force_download=force_download,
-                    proxies=proxies,
-                    resume_download=resume_download,
-                    token=token,
-                    local_files_only=local_files_only,
+                    repo_id=str(model_id), filename=cls.config_name, **hub_download_kwargs
                 )
             except requests.exceptions.RequestException:
                 if not fail_silently:
@@ -139,13 +126,21 @@ class HFHubProtocol(Protocol):
         cls: Type[T],
         pretrained_model_name_or_path: Union[str, Path],
         *,
-        force_download: bool = False,
-        resume_download: bool = False,
-        proxies: Optional[Dict] = None,
-        token: Optional[Union[str, bool]] = None,
-        cache_dir: Optional[Union[str, Path]] = None,
-        local_files_only: bool = False,
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
         revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         **model_kwargs,
     ) -> T:
         """Download a model from the Huggingface Hub and instantiate it.
@@ -155,24 +150,43 @@ class HFHubProtocol(Protocol):
                 - Either the `model_id` (string) of a model hosted on the Hub, e.g. `bigscience/bloom`.
                 - Or a path to a `directory` containing model weights saved using
                     [`~transformers.PreTrainedModel.save_pretrained`], e.g., `../path/to/my_model_directory/`.
+            subfolder (`str`, *optional*):
+                An optional value corresponding to a folder inside the model repo.
+            repo_type (`str`, *optional*):
+                Set to `"dataset"` or `"space"` if downloading from a dataset or space,
+                `None` or `"model"` if downloading from a model. Default is `None`.
             revision (`str`, *optional*):
-                Revision of the model on the Hub. Can be a branch name, a git tag or any commit id.
-                Defaults to the latest commit on `main` branch.
-            force_download (`bool`, *optional*, defaults to `False`):
-                Whether to force (re-)downloading the model weights and configuration files from the Hub, overriding
-                the existing cache.
-            resume_download (`bool`, *optional*, defaults to `False`):
-                Whether to delete incompletely received files. Will attempt to resume the download if such a file exists.
-            proxies (`Dict[str, str]`, *optional*):
-                A dictionary of proxy servers to use by protocol or endpoint, e.g., `{'http': 'foo.bar:3128',
-                'http://hostname': 'foo.bar:4012'}`. The proxies are used on every request.
-            token (`str` or `bool`, *optional*):
-                The token to use as HTTP bearer authorization for remote files. By default, it will use the token
-                cached when running `huggingface-cli login`.
+                An optional Git revision id which can be a branch name, a tag, or a
+                commit hash.
+            library_name (`str`, *optional*):
+                The name of the library to which the object corresponds.
+            library_version (`str`, *optional*):
+                The version of the library.
             cache_dir (`str`, `Path`, *optional*):
                 Path to the folder where cached files are stored.
+            local_dir (`str` or `Path`, *optional*):
+                If provided, the downloaded file will be placed under this directory.
+            user_agent (`dict`, `str`, *optional*):
+                The user-agent info in the form of a dictionary or a string.
+            force_download (`bool`, *optional*, defaults to `False`):
+                Whether the file should be downloaded even if it already exists in
+                the local cache.
+            proxies (`dict`, *optional*):
+                Dictionary mapping protocol to the URL of the proxy passed to
+                `requests.request`.
+            etag_timeout (`float`, *optional*, defaults to `10`):
+                When fetching ETag, how many seconds to wait for the server to send
+                data before giving up which is passed to `requests.request`.
+            token (`str`, `bool`, *optional*):
+                A token to be used for the download.
+                    - If `True`, the token is read from the HuggingFace config
+                      folder.
+                    - If a string, it's used as the authentication token.
             local_files_only (`bool`, *optional*, defaults to `False`):
-                If `True`, avoid downloading the file and return the path to the local cached file if it exists.
+                If `True`, avoid downloading the file and return the path to the
+                local cached file if it exists.
+            headers (`dict`, *optional*):
+                Additional headers to be sent with the request.
             model_kwargs (`Dict`, *optional*):
                 Additional kwargs to pass to the model during initialization.
         """
@@ -180,13 +194,21 @@ class HFHubProtocol(Protocol):
 
         config_file = cls.retrieve_config_file(
             model_id=model_id,
+            subfolder=subfolder,
+            repo_type=repo_type,
             revision=revision,
+            library_name=library_name,
+            library_version=library_version,
             cache_dir=cache_dir,
+            local_dir=local_dir,
+            user_agent=user_agent,
             force_download=force_download,
             proxies=proxies,
-            resume_download=resume_download,
-            local_files_only=local_files_only,
+            etag_timeout=etag_timeout,
             token=token,
+            local_files_only=local_files_only,
+            headers=headers,
+            endpoint=endpoint,
             fail_silently=False,
         )
 
@@ -201,13 +223,21 @@ class HFHubProtocol(Protocol):
 
         return cls._from_pretrained(
             model_id=str(model_id),
+            subfolder=subfolder,
+            repo_type=repo_type,
             revision=revision,
+            library_name=library_name,
+            library_version=library_version,
             cache_dir=cache_dir,
+            local_dir=local_dir,
+            user_agent=user_agent,
             force_download=force_download,
             proxies=proxies,
-            resume_download=resume_download,
-            local_files_only=local_files_only,
+            etag_timeout=etag_timeout,
             token=token,
+            local_files_only=local_files_only,
+            headers=headers,
+            endpoint=endpoint,
             **model_kwargs,
         )
 
@@ -216,13 +246,21 @@ class HFHubProtocol(Protocol):
         cls: Type[T],
         *,
         model_id: str,
-        revision: Optional[str],
-        cache_dir: Optional[Union[str, Path]],
-        force_download: bool,
-        proxies: Optional[Dict],
-        resume_download: bool,
-        local_files_only: bool,
-        token: Optional[Union[str, bool]],
+        subfolder: Optional[str] = None,
+        repo_type: Optional[str] = None,
+        revision: Optional[str] = None,
+        library_name: Optional[str] = None,
+        library_version: Optional[str] = None,
+        cache_dir: Union[str, Path, None] = None,
+        local_dir: Union[str, Path, None] = None,
+        user_agent: Union[Dict, str, None] = None,
+        force_download: bool = False,
+        proxies: Optional[Dict] = None,
+        etag_timeout: float = DEFAULT_ETAG_TIMEOUT,
+        token: Union[bool, str, None] = None,
+        local_files_only: bool = False,
+        headers: Optional[Dict[str, str]] = None,
+        endpoint: Optional[str] = None,
         **model_kwargs,
     ) -> T:
         """Overwrite this method in subclass to define how to load your model from pretrained.
