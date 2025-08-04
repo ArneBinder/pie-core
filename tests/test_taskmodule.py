@@ -7,12 +7,7 @@ from typing import Iterable, Iterator, List, Optional, Union
 
 import pytest
 
-from pie_core import (
-    AutoTaskModule,
-    IterableTaskEncodingDataset,
-    TaskEncoding,
-    TaskEncodingDataset,
-)
+from pie_core import AutoTaskModule, TaskEncoding
 from pie_core.taskmodule import (
     DocumentType,
     InputEncoding,
@@ -390,56 +385,6 @@ def test_encode_as_iterator_as_task_encoding_sequence(taskmodule, documents):
             documents, encode_target=False, as_iterator=True, as_task_encoding_sequence=True
         )
     assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as Iterator"
-
-
-def test_encode_as_iterator_as_dataset(taskmodule, documents, label_ids):
-    encodings_iterator = taskmodule.encode(
-        documents,
-        encode_target=True,
-        as_iterator=True,
-        as_dataset=True,
-        as_task_encoding_sequence=False,
-    )
-    assert isinstance(encodings_iterator, IterableTaskEncodingDataset)
-    assert_task_encodings(
-        task_encodings=encodings_iterator,
-        expected_documents=documents,
-        expected_inputs=[
-            [1, 2, 3, 4, 5, 6, 2, 7, 8],
-            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
-        ],
-        expected_targets=label_ids,
-    )
-
-
-def test_encode_as_dataset_as_task_encoding_sequence(taskmodule, documents):
-    with pytest.raises(ValueError) as excinfo:
-        taskmodule.encode(
-            documents,
-            encode_target=False,
-            as_dataset=True,
-            as_task_encoding_sequence=True,
-        )
-    assert excinfo.value.args[0] == "can not return a TaskEncodingSequence as a dataset"
-
-
-def test_encode_as_dataset(taskmodule, documents, label_ids):
-    encodings_dataset = taskmodule.encode(
-        documents,
-        encode_target=True,
-        as_dataset=True,
-        as_task_encoding_sequence=False,
-    )
-    assert isinstance(encodings_dataset, TaskEncodingDataset)
-    assert_task_encodings(
-        task_encodings=encodings_dataset,
-        expected_documents=documents,
-        expected_inputs=[
-            [1, 2, 3, 4, 5, 6, 2, 7, 8],
-            [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 6, 19, 20, 21],
-        ],
-        expected_targets=label_ids,
-    )
 
 
 def test_save_pretrained(taskmodule, tmp_path, config_as_json):
