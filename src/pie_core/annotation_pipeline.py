@@ -91,7 +91,6 @@ class AnnotationPipelineHFHubMixin(HFHubMixin):
                 proxies=proxies,
                 cache_dir=cache_dir,
                 local_files_only=local_files_only,
-                **(taskmodule_or_taskmodule_kwargs or {}),
             )
             # 2. If the taskmodule config file is found, load the taskmodule via from_pretrained()
             if taskmodule_config_file is not None:
@@ -191,11 +190,14 @@ class AnnotationPipeline(
 
     def _config(self) -> Dict[str, Any]:
         config = super()._config() or {}
-        if self.has_base_class():
+        if (
+            self.has_base_class()
+            and self.base_class().registered_name_for_class(self.__class__) is not None
+        ):
             config[self.config_type_key] = self.base_class().name_for_object_class(self)
         else:
             logger.warning(
-                f"{self.__class__.__name__} does not have a base class. It will not work"
+                f"{self.__class__.__name__} is not registered. It will not work"
                 " with AutoAnnotationPipeline.from_pretrained() or"
                 " AutoAnnotationPipeline.from_config(). Consider to annotate the class with"
                 " @AnnotationPipeline.register() or @AnnotationPipeline.register(name='...')"
