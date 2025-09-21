@@ -29,8 +29,6 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9"
 huggingface_hub = ">=0.23.4,<0.26.0"
-# required for (Iterable)TaskEncodingDataset
-torch = {version = "^2.1.0", source = "pytorch-cpu"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
@@ -47,15 +45,9 @@ plotext = "^5.3.2"
 optional = true
 
 [[tool.poetry.source]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "explicit"
-
-[[tool.poetry.source]]
 name = "pre-release"
 url = "https://test.pypi.org/simple/"
 priority = "explicit"
-
 
 [tool.pytest.ini_options]
 addopts = [
