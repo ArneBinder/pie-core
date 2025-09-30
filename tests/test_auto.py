@@ -9,6 +9,7 @@ from pie_core.hf_hub_mixin import HFHubMixin
 from tests import FIXTURES_ROOT
 
 PRETRAINED_PATH = FIXTURES_ROOT / "pretrained" / "auto"
+PRETRAINED_PATH_NO_AUTO_TYPE = FIXTURES_ROOT / "pretrained" / "auto_no_auto_type"
 
 
 class TestHFHubMixin(HFHubMixin):
@@ -82,6 +83,26 @@ def test_from_config_with_kwargs_override(config_as_dict):
     assert sub.foo == "Test2"
 
 
+def test_from_config_without_auto_type(config_as_dict):
+    config = config_as_dict.copy()
+    config.pop("auto_type")
+    with pytest.raises(ValueError) as e:
+        AutoTest.from_config(config=config)
+    assert (
+        str(e.value) == "Missing required key 'auto_type' to select a concrete Test for AutoTest. "
+        "Provide it in the config or pass it as a keyword argument (auto_type=...). "
+        "Received config: {'foo': 'Test'}"
+    )
+
+
+def test_from_config_with_external_auto_type(config_as_dict):
+    config = config_as_dict.copy()
+    config.pop("auto_type")
+    sub = AutoTest.from_config(config=config, auto_type="Sub")
+    assert isinstance(sub, Sub)
+    assert sub.foo == "Test"
+
+
 def test_from_pretrained():
     sub = AutoTest.from_pretrained(PRETRAINED_PATH)
     assert isinstance(sub, Sub)
@@ -94,3 +115,20 @@ def test_from_pretrained_with_kwargs_override():
     assert isinstance(sub, Sub2)
     assert sub.is_from_pretrained
     assert sub.foo == "Test2"
+
+
+def test_from_pretrained_without_auto_type():
+    with pytest.raises(ValueError) as e:
+        AutoTest.from_pretrained(PRETRAINED_PATH_NO_AUTO_TYPE)
+    assert (
+        str(e.value) == "Missing required key 'auto_type' to select a concrete Test for AutoTest. "
+        "Provide it in the config or pass it as a keyword argument (auto_type=...). "
+        "Received config: {'foo': 'Test'}"
+    )
+
+
+def test_from_pretrained_with_external_auto_type():
+    sub = AutoTest.from_pretrained(PRETRAINED_PATH_NO_AUTO_TYPE, auto_type="Sub")
+    assert isinstance(sub, Sub)
+    assert sub.is_from_pretrained
+    assert sub.foo == "Test"
